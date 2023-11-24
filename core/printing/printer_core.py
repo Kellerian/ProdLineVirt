@@ -20,7 +20,8 @@ class PrinterEmul:
         self._t_server = Thread(target=self._run_login_thread)
         self._connections: list[socket.socket] = []
         self._log = getLogger(PRINTER_LOGGER)
-        self._print_buffer: deque[str] = deque([], maxlen=buffer_size)
+        self._max_size = buffer_size
+        self._print_buffer: deque[str] = deque([])
         self._printed = 0
 
     def start(self):
@@ -37,6 +38,9 @@ class PrinterEmul:
 
     def buffer_size(self) -> int:
         return len(self._print_buffer)
+
+    def set_buffer_size(self, size: int):
+        self._max_size = size
 
     def buffer_data(self) -> list[str]:
         return list(self._print_buffer)
@@ -99,8 +103,7 @@ class PrinterEmul:
         self, msg_received: str, client: socket.socket
     ) -> bool:
         current_buffer_size = len(self._print_buffer)
-        max_buffer_size = self._print_buffer.maxlen
-        available_space = max_buffer_size - current_buffer_size
+        available_space = self._max_size - current_buffer_size
         response_text = ""
         self._log.debug(f"[{self.name}] CHECKING IF STATUS REQUEST: "
                         f"{msg_received}")

@@ -126,6 +126,7 @@ class Ui_Form(object):
         font.setPointSize(10)
         self.lstData.setFont(font)
         self.lstData.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.lstData.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragOnly)
         self.lstData.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.lstData.setAlternatingRowColors(True)
         self.lstData.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)

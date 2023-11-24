@@ -21,21 +21,33 @@ class CameraProxy(QObject):
     def start(self, name: str, port: int):
         self._camera = CameraEmul(name, port)
         self._camera.start()
+        self._t_sent.start()
 
     def stop(self):
+        if self._camera is None:
+            return
         self._camera.stop()
+        self._t_sent.stop()
         self._camera = None
 
     def set_noread(self, enabled: bool, error_percent: int = 0):
+        if self._camera is None:
+            return
         self._camera.set_noread(enabled, error_percent)
 
     def set_grade(self, enabled: bool, error_percent: int = 0):
+        if self._camera is None:
+            return
         self._camera.set_grade(enabled, error_percent)
 
     def set_duplicates(self, enabled: bool, error_percent: int = 0):
+        if self._camera is None:
+            return
         self._camera.set_duplicates(enabled, error_percent)
 
     def send_data(self, messages: list[str]):
+        if self._camera is None:
+            return
         self._camera.send(messages)
 
     def _get_scanned_data(self):

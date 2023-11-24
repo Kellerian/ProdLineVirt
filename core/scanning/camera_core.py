@@ -74,14 +74,14 @@ class CameraEmul:
             if not self._can_process_data_to_send():
                 sleep(0.01)
                 continue
-            processed_messages: list[tuple[str, bool]] = []
+            processed_messages: list[tuple[str, bool, str]] = []
             while self._to_send:
                 message = self._to_send.popleft()
-                message, is_ok = self._process_message(message)
-                processed_messages.append((message, is_ok))
-            self._send_message([msg for msg, _ in processed_messages])
+                p_message, is_ok = self._process_message(message)
+                processed_messages.append((p_message, is_ok, message))
+            self._send_message([msg for msg, _, _ in processed_messages])
             self._sent.extend(
-                [msg for msg, is_ok in processed_messages if is_ok]
+                [msg for _, is_ok, msg in processed_messages if is_ok]
             )
 
     def _process_message(self, message: str) -> tuple[str, bool]:

@@ -4,6 +4,7 @@ from PyQt6.QtGui import QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import QWidget
 from core.scanning.camera_proxy import CameraProxy
 from forms.Camera import Ui_Form
+from libs.model_processing import CustomItemModel
 
 
 class CameraWidget(QWidget, Ui_Form):
@@ -15,7 +16,7 @@ class CameraWidget(QWidget, Ui_Form):
 
         self._setup_icon(self.tbRun.isChecked())
 
-        self._model_in = QStandardItemModel()
+        self._model_in = CustomItemModel()
         self.lstData.setModel(self._model_in)
         self.lstData.setAcceptDrops(True)
         self.lstData.setDropIndicatorShown(True)
@@ -37,14 +38,14 @@ class CameraWidget(QWidget, Ui_Form):
             return
 
         data_to_send: list[str] = []
-        for i in range(batch_size):
-            row = self._model_in.takeRow(i)
+        for _ in range(batch_size):
+            row = self._model_in.takeRow(0)
             item = row[0]
             data_to_send.append(item.text())
         self._camera.send_data(data_to_send)
 
     def _connect_ui(self):
-        self.tbRun.toggled.connect(self._run_action)
+        self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
 
         self.cbxNoRead.toggled.connect(self.set_no_read_settings)
@@ -76,7 +77,7 @@ class CameraWidget(QWidget, Ui_Form):
         )
 
     def set_dups_settings(self):
-        self._camera.set_noread(
+        self._camera.set_duplicates(
             self.cbxDups.isChecked(), self.spDupsPercent.value()
         )
 
@@ -88,8 +89,9 @@ class CameraWidget(QWidget, Ui_Form):
 
     def _clear_data(self):
         self._model_in.clear()
+        self._model_out.clear()
 
-    def _run_action(self, toggled: bool):
+    def run(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():
             self.tbRun.setChecked(False)
             return

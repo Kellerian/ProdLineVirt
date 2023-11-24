@@ -25,11 +25,15 @@ class PrinterWidget(QWidget, Ui_Form):
         self._data_list: list[str] = []
 
     def _connect_ui(self):
-        self.tbRun.toggled.connect(self._run_action)
+        self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
+        self.spAmount.valueChanged.connect(self._set_printer_buffer_size)
         self._model.rowsAboutToBeRemoved.connect(
             self._model_rows_to_be_removed
         )
+
+    def _set_printer_buffer_size(self, value: int):
+        self._printer.set_buffer_size(value)
 
     def _model_rows_to_be_removed(self, _, first: int, last: int):
         for i in range(first, last + 1):
@@ -67,7 +71,7 @@ class PrinterWidget(QWidget, Ui_Form):
     def _clear_data(self):
         self._model.clear()
 
-    def _run_action(self, toggled: bool):
+    def run(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():
             self.tbRun.setChecked(False)
             return
@@ -81,6 +85,7 @@ class PrinterWidget(QWidget, Ui_Form):
             except ValueError:
                 return
             self._printer.start(name, port, buffer_size)
+            self._printer.set_buffer_size(self.spAmount.value())
         else:
             self._printer.stop()
             self._clear_data()

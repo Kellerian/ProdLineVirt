@@ -27,6 +27,8 @@ class PrinterProxy(QObject):
         self._data_update_timer.start()
 
     def stop(self):
+        if self._printer is None:
+            return
         self._printer.stop()
         self._data_update_timer.stop()
         self._printer = None
@@ -35,6 +37,11 @@ class PrinterProxy(QObject):
         size = self._printer.buffer_size()
         # noinspection PyUnresolvedReferences
         self.buffer_size.emit(size)
+
+    def set_buffer_size(self, size: int):
+        if self._printer is None:
+            return
+        self._printer.set_buffer_size(size)
 
     def check_data(self):
         buffer_data = self._printer.buffer_data()
