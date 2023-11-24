@@ -1,7 +1,7 @@
 import qtawesome
-from PyQt6.QtCore import QStringListModel
+from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import QWidget
-
 from core.scanning.camera_proxy import CameraProxy
 from forms.Camera import Ui_Form
 
@@ -12,30 +12,73 @@ class CameraWidget(QWidget, Ui_Form):
         self.setupUi(self)
         self.PLAY_ICON = qtawesome.icon('fa5s.play', color="#00FF00")
         self.STOP_ICON = qtawesome.icon('fa.stop', color="#FF0000")
-        self.GARBAGE_ICON = qtawesome.icon(
-            'ri.delete-bin-fill', color="#FF0000"
-        )
 
         self._setup_icon(self.tbRun.isChecked())
-        self.tbDel.setIcon(self.GARBAGE_ICON)
-        self._model = QStringListModel()
-        self.lstData.setModel(self._model)
-        self.lstData.setDragEnabled(True)
-        self._printer = self._get_camera_proxy()
+
+        self._model_in = QStandardItemModel()
+        self.lstData.setModel(self._model_in)
+        self.lstData.setAcceptDrops(True)
+        self.lstData.setDropIndicatorShown(True)
+
+        self._model_out = QStandardItemModel()
+        self.lstProcessed.setModel(self._model_out)
+        self.lstProcessed.setDragEnabled(True)
+
+        self._camera = self._get_camera_proxy()
+        self._timer_sender = QTimer()
+        self._timer_sender.setInterval(500)
+        # noinspection PyUnresolvedReferences
+        self._timer_sender.timeout.connect(self.send_data)
         self._connect_ui()
-        self._data_list: list[str] = []
+
+    def send_data(self):
+        batch_size = self.spSize.value()
+        if self._model_in.rowCount() < batch_size:
+            return
+
+        data_to_send: list[str] = []
+        for i in range(batch_size):
+            row = self._model_in.takeRow(i)
+            item = row[0]
+            data_to_send.append(item.text())
+        self._camera.send_data(data_to_send)
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self._run_action)
         self.tbRun.toggled.connect(self._setup_icon)
-        self.tbDel.clicked.connect(self._pop_code)
 
-    def _pop_code(self):
-        pass
+        self.cbxNoRead.toggled.connect(self.set_no_read_settings)
+        self.spNoReadPercent.valueChanged.connect(self.set_no_read_settings)
+
+        self.cbxDups.toggled.connect(self.set_dups_settings)
+        self.spDupsPercent.valueChanged.connect(self.set_dups_settings)
+
+        self.cbxGrade.toggled.connect(self.set_grade_settings)
+        self.spGradeErrorPercent.valueChanged.connect(self.set_grade_settings)
 
     def _get_camera_proxy(self) -> CameraProxy:
         cp = CameraProxy()
+        cp.scanned.connect(self.populate_scanned_data)
         return cp
+
+    def populate_scanned_data(self, data: list[str]):
+        for row in data:
+            self._model_out.appendRow(QStandardItem(row))
+
+    def set_no_read_settings(self):
+        self._camera.set_noread(
+            self.cbxNoRead.isChecked(), self.spNoReadPercent.value()
+        )
+
+    def set_grade_settings(self):
+        self._camera.set_grade(
+            self.cbxGrade.isChecked(), self.spGradeErrorPercent.value()
+        )
+
+    def set_dups_settings(self):
+        self._camera.set_noread(
+            self.cbxDups.isChecked(), self.spDupsPercent.value()
+        )
 
     def _setup_icon(self, toggled: bool):
         if toggled:
@@ -44,7 +87,29 @@ class CameraWidget(QWidget, Ui_Form):
             self.tbRun.setIcon(self.PLAY_ICON)
 
     def _clear_data(self):
-        self._model.setStringList([])
+        self._model_in.clear()
 
     def _run_action(self, toggled: bool):
-        pass
+        if not self.leName.text() and not self.leConnetionStr.text():
+            self.tbRun.setChecked(False)
+            return
+        self.leName.setDisabled(toggled)
+        self.leConnetionStr.setDisabled(toggled)
+        if toggled:
+            name = self.leName.text()
+            try:
+                port = int(self.leConnetionStr.text())
+            except ValueError:
+                return
+            self._run_camera(name, port)
+            self._timer_sender.start()
+        else:
+            self._timer_sender.stop()
+            self._camera.stop()
+            self._clear_data()
+
+    def _run_camera(self, name: str, port: int):
+        self._camera.start(name, port)
+        self.set_no_read_settings()
+        self.set_dups_settings()
+        self.set_grade_settings()

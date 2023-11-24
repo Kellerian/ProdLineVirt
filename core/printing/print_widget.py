@@ -1,8 +1,10 @@
-from PyQt6.QtCore import QStringListModel
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QStandardItemModel
 from PyQt6.QtWidgets import QWidget
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
 import qtawesome
+from libs.model_processing import update_model_data
 
 
 class PrinterWidget(QWidget, Ui_Form):
@@ -12,12 +14,10 @@ class PrinterWidget(QWidget, Ui_Form):
         self.setupUi(self)
         self.PLAY_ICON = qtawesome.icon('fa5s.play', color="#00FF00")
         self.STOP_ICON = qtawesome.icon('fa.stop', color="#FF0000")
-        self.GARBAGE_ICON = qtawesome.icon(
-            'ri.delete-bin-fill', color="#FF0000"
-        )
+
         self._setup_icon(self.tbRun.isChecked())
-        self.tbDel.setIcon(self.GARBAGE_ICON)
-        self._model = QStringListModel()
+        self._model = QStandardItemModel()
+
         self.lstData.setModel(self._model)
         self.lstData.setDragEnabled(True)
         self._printer = self._get_printer_proxy()
@@ -27,16 +27,15 @@ class PrinterWidget(QWidget, Ui_Form):
     def _connect_ui(self):
         self.tbRun.toggled.connect(self._run_action)
         self.tbRun.toggled.connect(self._setup_icon)
-        self.tbDel.clicked.connect(self._pop_code)
+        self._model.rowsAboutToBeRemoved.connect(
+            self._model_rows_to_be_removed
+        )
 
-    def _pop_code(self):
-        selected_rows = self.lstData.selectedIndexes()
-        if not selected_rows:
-            return
-        for item_index in selected_rows:
-            row_data = item_index.data()
-            self._delete_item(row_data)
-        self._model.setStringList(self._data_list)
+    def _model_rows_to_be_removed(self, _, first: int, last: int):
+        for i in range(first, last + 1):
+            index = self._model.index(i, 0)
+            item_text = self._model.data(index, Qt.ItemDataRole.DisplayRole)
+            self._delete_item(item_text)
 
     def _delete_item(self, row_data: str):
         self._printer.remove(row_data)
@@ -55,7 +54,7 @@ class PrinterWidget(QWidget, Ui_Form):
         return pp
 
     def _set_buffer_size_info(self, buffer_size: int):
-        self.lblBuffer.setText(f"МЕСТА В БУФФЕРЕ: {buffer_size}")
+        self.lstData.setToolTip(f"БУФФЕР: {buffer_size}")
 
     def _populate_list_with_buffer_data(self, data: list[str]):
         if not data:
@@ -63,10 +62,10 @@ class PrinterWidget(QWidget, Ui_Form):
         new_rows = [row for row in data if row not in self._data_list]
         if new_rows:
             self._data_list.extend(new_rows)
-            self._model.setStringList(self._data_list)
+            update_model_data(self._model, self._data_list)
 
     def _clear_data(self):
-        self._model.setStringList([])
+        self._model.clear()
 
     def _run_action(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():

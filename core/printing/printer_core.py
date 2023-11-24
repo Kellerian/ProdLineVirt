@@ -41,9 +41,6 @@ class PrinterEmul:
     def buffer_data(self) -> list[str]:
         return list(self._print_buffer)
 
-    def get(self) -> str:
-        return self._print_buffer.popleft()
-
     def remove(self, code: str):
         self._print_buffer.remove(code)
 
