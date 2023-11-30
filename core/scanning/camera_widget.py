@@ -27,7 +27,7 @@ class CameraWidget(QWidget, Ui_Form):
 
         self._camera = self._get_camera_proxy()
         self._timer_sender = QTimer()
-        self._timer_sender.setInterval(500)
+        self._timer_sender.setInterval(250)
         # noinspection PyUnresolvedReferences
         self._timer_sender.timeout.connect(self.send_data)
         self._connect_ui()

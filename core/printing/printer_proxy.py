@@ -14,7 +14,7 @@ class PrinterProxy(QObject):
 
     def _setup_timer(self) -> QTimer:
         timer = QTimer()
-        timer.setInterval(1000)
+        timer.setInterval(500)
         # noinspection PyUnresolvedReferences
         timer.timeout.connect(self.check_size)
         # noinspection PyUnresolvedReferences

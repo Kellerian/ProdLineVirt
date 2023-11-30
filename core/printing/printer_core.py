@@ -64,6 +64,8 @@ class PrinterEmul:
         while self._can_run:
             for client in self._connections.copy():
                 self._process_client(client)
+            else:
+                sleep(0.01)
         for client in self._connections.copy():
             client.close()
             self._connections.remove(client)
@@ -77,20 +79,21 @@ class PrinterEmul:
             self._log.critical(f"<{self.name}> {client} {e}")
             try:
                 client.close()
-            except:
+            except socket.error:
                 pass
             self._connections.remove(client)
             return
         if not msg_received:
             return
-        self._log.debug(f"[{self.name}] NEW MESSAGE: {msg_received}")
+        # self._log.debug(f"[{self.name}] NEW MESSAGE: {msg_received}")
         if self._process_status_requests(msg_received, client):
             return
         dm_extracted = extract_barcode_value_from_template(msg_received)
         if not dm_extracted:
             return
-        self._log.info(f"[{self.name}] BARCODE: {dm_extracted}")
-        self._add_barcode_to_buffer(process_barcode(dm_extracted))
+        self._log.info(f"[{self.name}] BARCODES: {dm_extracted}")
+        for code in dm_extracted:
+            self._add_barcode_to_buffer(process_barcode(code))
 
     def _add_barcode_to_buffer(self, barcode: str):
         self._print_buffer.append(barcode)
@@ -105,8 +108,9 @@ class PrinterEmul:
         current_buffer_size = len(self._print_buffer)
         available_space = self._max_size - current_buffer_size
         response_text = ""
-        self._log.debug(f"[{self.name}] CHECKING IF STATUS REQUEST: "
-                        f"{msg_received}")
+        # self._log.debug(
+        #     f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
+        # )
         if msg_received == f"{chr(27)}!?":
             response_text = '\x00'
         elif msg_received == "~S,CHECK":
@@ -119,6 +123,6 @@ class PrinterEmul:
             response_text = f"{available_space}"
         if not response_text:
             return False
-        self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
+        # self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
         client.send(response_text.encode())
         return True

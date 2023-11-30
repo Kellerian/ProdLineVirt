@@ -1,8 +1,9 @@
 from random import randint
 
 
-def extract_barcode_value_from_template(msg_received: str) -> str:
+def extract_barcode_value_from_template(msg_received: str) -> list[str]:
     msg_rows = msg_received.split("\n")
+    extracted_data: list[str] = []
     for r, row in enumerate(msg_rows):
         dm_extracted = ''
         if 'BARCODE=' in row:
@@ -30,8 +31,8 @@ def extract_barcode_value_from_template(msg_received: str) -> str:
             row = row.replace('^FS', '')
             dm_extracted = row.strip()
         if dm_extracted:
-            return dm_extracted
-    return ''
+            extracted_data.append(dm_extracted)
+    return extracted_data
 
 
 def process_barcode(barcode: str) -> str:

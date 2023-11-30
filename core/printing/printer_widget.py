@@ -69,6 +69,7 @@ class PrinterWidget(QWidget, Ui_Form):
             update_model_data(self._model, self._data_list)
 
     def _clear_data(self):
+        self._data_list.clear()
         self._model.clear()
 
     def run(self, toggled: bool):
