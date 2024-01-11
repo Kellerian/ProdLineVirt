@@ -4,6 +4,7 @@ from threading import Thread
 from logging import getLogger
 from time import sleep
 
+from core.printing.chw import get_chw_codes
 from libs.loggers import PRINTER_LOGGER
 from libs.sockets import get_data_from_socket, get_server_socket
 from libs.template_parsers import (
@@ -93,10 +94,11 @@ class PrinterEmul:
             return
         self._log.info(f"[{self.name}] BARCODES: {dm_extracted}")
         for code in dm_extracted:
-            self._add_barcode_to_buffer(process_barcode(code))
+            self._add_barcode_to_buffer(code)
 
     def _add_barcode_to_buffer(self, barcode: str):
-        self._print_buffer.append(barcode)
+        processed_code = process_barcode(barcode)
+        self._print_buffer.append(processed_code)
         self._printed += 1
         self._log.info(
             f"[{self.name}] <{self._printed}> PRINTED: {barcode}"
@@ -121,6 +123,28 @@ class PrinterEmul:
             response_text = f"0,0,0,0,{current_buffer_size}"
         elif msg_received == "~S,LABEL":
             response_text = f"{available_space}"
+        # Эмуляция чеквейра
+        elif msg_received == "START":
+            response_text = "START ON"
+        elif msg_received == "STOP":
+            client.send("STOP CMD".encode())
+            client.send("STOP LINE".encode())
+            return True
+        elif "ORDER" in msg_received:
+            order_id = int(msg_received.split("=")[1])
+            codes = get_chw_codes(order_id, '10.76.100.55', 5432, 'check_way')
+            if codes:
+                for code in codes:
+                    self._add_barcode_to_buffer(code)
+                response_text = f"ORDER SELECT={order_id}"
+            else:
+                response_text = f"Отсутствуют коды в БД для заказа {order_id}"
+        elif msg_received == "STATE":
+            response_text = "OK"
+        elif msg_received == "STATE=1":
+            response_text = "OK"
+        elif msg_received == "BOXCLOSE":
+            response_text = "OK"
         if not response_text:
             return False
         # self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
