@@ -24,6 +24,7 @@ class PrinterEmul:
         self._max_size = buffer_size
         self._print_buffer: deque[str] = deque([])
         self._printed = 0
+        self._files_list: list[str] = []
 
     def start(self):
         self._can_run = True
@@ -115,6 +116,14 @@ class PrinterEmul:
         # )
         if msg_received == f"{chr(27)}!?":
             response_text = '\x00'
+        elif msg_received == f"~!F":
+            if self._files_list:
+                response_text = "\r".join(self._files_list)
+            else:
+                response_text = chr(26)
+        elif "DOWNLOAD F" in msg_received:
+            parts = msg_received.split(",")
+            self._files_list.append(parts[1])
         elif msg_received == "~S,CHECK":
             response_text = '00'
         elif msg_received == "OUT @LABEL":
