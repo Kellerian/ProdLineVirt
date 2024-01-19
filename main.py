@@ -24,5 +24,6 @@ if __name__ == '__main__':
     setup_logging()
     app = QApplication(sys.argv)
     pw = MainLineField()
+    pw.two_cam_setup()
     pw.show()
     app.exec()

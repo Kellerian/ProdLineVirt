@@ -8,7 +8,7 @@ from libs.model_processing import CustomItemModel
 
 
 class CameraWidget(QWidget, Ui_Form):
-    def __init__(self):
+    def __init__(self, name: str, port: int):
         super().__init__()
         self.setupUi(self)
         self.PLAY_ICON = qtawesome.icon('fa5s.play', color="#00FF00")
@@ -31,6 +31,8 @@ class CameraWidget(QWidget, Ui_Form):
         # noinspection PyUnresolvedReferences
         self._timer_sender.timeout.connect(self.send_data)
         self._connect_ui()
+        self.leName.setText(name)
+        self.leConnetionStr.setText(str(port))
 
     def send_data(self):
         batch_size = self.spSize.value()

@@ -9,7 +9,7 @@ from libs.model_processing import update_model_data
 
 class PrinterWidget(QWidget, Ui_Form):
 
-    def __init__(self):
+    def __init__(self, name: str, port: int):
         super().__init__()
         self.setupUi(self)
         self.PLAY_ICON = qtawesome.icon('fa5s.play', color="#00FF00")
@@ -23,6 +23,8 @@ class PrinterWidget(QWidget, Ui_Form):
         self._printer = self._get_printer_proxy()
         self._connect_ui()
         self._data_list: list[str] = []
+        self.leName.setText(name)
+        self.leConnetionStr.setText(str(port))
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
