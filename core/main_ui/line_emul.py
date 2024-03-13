@@ -23,7 +23,6 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._add(CameraWidget("DM.CAM.LOCAL", 23))
         self._add(PrinterWidget("AGR1.PRINT.LOCAL", 9102))
         self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9103))
-        self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9104))
         self._add(CameraWidget("VER.CAM.LOCAL", 32))
 
     def setup_single_pack(self):
@@ -38,6 +37,28 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._add(CameraWidget("AGR.CAM.LOCAL", 27))
         self._add(CameraWidget("VER.CAM.LOCAL", 32))
         self._add(PrinterWidget("AGR.PRINT.LOCAL", 9102))
+
+    def three_aggr_levels(self):
+        self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
+        self._add(CameraWidget("DM.CAM.LOCAL", 23))
+        self._add(PrinterWidget("AGR1.PRINT.LOCAL", 9102))
+        self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9103))
+        self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9104))
+        self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9105))
+
+
+    def ser_aggr_cam(self):
+        self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
+        self._add(CameraWidget("DM.CAM.LOCAL", 23))
+        self._add(CameraWidget("AGR.CAM.LOCAL", 27))
+        self._add(PrinterWidget("AGR1.PRINT.LOCAL", 9102))
+        self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9103))
+        self._add(CameraWidget("VER.CAM.LOCAL", 32))
+
+    def test_tandem(self):
+        self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
+        self._add(PrinterWidget("DM1.PRINT.LOCAL", 9102))
+        self._add(CameraWidget("DM.CAM.LOCAL", 23))
 
     def _add(self, device: CameraWidget | PrinterWidget):
         self.centralwidget.layout().addWidget(device)

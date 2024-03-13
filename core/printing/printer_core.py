@@ -1,3 +1,4 @@
+import random
 from collections import deque
 import socket
 from threading import Thread
@@ -25,6 +26,11 @@ class PrinterEmul:
         self._print_buffer: deque[str] = deque([])
         self._printed = 0
         self._files_list: list[str] = []
+        self._mac: str = "02:00:00:%02x:%02x:%02x" % (
+            random.randint(0, 255),
+            random.randint(0, 255),
+            random.randint(0, 255)
+        )
 
     def start(self):
         self._can_run = True
@@ -111,9 +117,9 @@ class PrinterEmul:
         current_buffer_size = len(self._print_buffer)
         available_space = self._max_size - current_buffer_size
         response_text = ""
-        # self._log.debug(
-        #     f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
-        # )
+        self._log.debug(
+            f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
+        )
         if msg_received == f"{chr(27)}!?":
             response_text = '\x00'
         elif msg_received == f"~!F":
@@ -126,6 +132,8 @@ class PrinterEmul:
             self._files_list.append(parts[1])
         elif msg_received == "~S,CHECK":
             response_text = '00'
+        elif msg_received == "~S,STATUS":
+            response_text = '00,00000'
         elif msg_received == "OUT @LABEL":
             response_text = f"{self._printed}"
         elif msg_received == "~HS":
@@ -141,7 +149,9 @@ class PrinterEmul:
             return True
         elif "ORDER" in msg_received:
             order_id = int(msg_received.split("=")[1])
-            codes = get_chw_codes(order_id, '10.76.100.55', 5432, 'check_way')
+            codes = get_chw_codes(
+                order_id, '127.0.0.1', 6432, 'ekoniva_chw'
+            )
             if codes:
                 for code in codes:
                     self._add_barcode_to_buffer(code)
@@ -149,13 +159,20 @@ class PrinterEmul:
             else:
                 response_text = f"Отсутствуют коды в БД для заказа {order_id}"
         elif msg_received == "STATE":
-            response_text = "OK"
+            response_text = "STATE 0x248A = RUNNING"
         elif msg_received == "STATE=1":
-            response_text = "OK"
+            response_text = "STATE 0x248A = RUNNING"
         elif msg_received == "BOXCLOSE":
             response_text = "OK"
+        elif msg_received == "SPLIT":
+            response_text = "OK"
+        elif msg_received in (
+            'OUT GETSETTING$("CONFIG", "NET", "MAC ADDRESS")',
+            '^NMACADDR'
+        ):
+            response_text = self._mac
         if not response_text:
             return False
-        # self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
+        self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
         client.send(response_text.encode())
         return True
