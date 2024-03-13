@@ -47,6 +47,9 @@ class PrinterEmul:
     def buffer_size(self) -> int:
         return len(self._print_buffer)
 
+    def clear_buffer(self) -> None:
+        self._print_buffer.clear()
+
     def set_buffer_size(self, size: int):
         self._max_size = size
 
@@ -115,13 +118,15 @@ class PrinterEmul:
         self, msg_received: str, client: socket.socket
     ) -> bool:
         current_buffer_size = len(self._print_buffer)
-        available_space = self._max_size - current_buffer_size
+        # available_space = self._max_size - current_buffer_size
         response_text = ""
-        self._log.debug(
-            f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
-        )
+        # self._log.debug(
+        #     f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
+        # )
         if msg_received == f"{chr(27)}!?":
             response_text = '\x00'
+        elif msg_received == f"{chr(27)}!.":
+            response_text = "CLEAR BUFFER"
         elif msg_received == f"~!F":
             if self._files_list:
                 response_text = "\r".join(self._files_list)
@@ -139,7 +144,7 @@ class PrinterEmul:
         elif msg_received == "~HS":
             response_text = f"0,0,0,0,{current_buffer_size}"
         elif msg_received == "~S,LABEL":
-            response_text = f"{available_space}"
+            response_text = f"{current_buffer_size}"
         # Эмуляция чеквейра
         elif msg_received == "START":
             response_text = "START ON"
@@ -166,13 +171,18 @@ class PrinterEmul:
             response_text = "OK"
         elif msg_received == "SPLIT":
             response_text = "OK"
+        elif msg_received == "~S,BUFCLR":
+            response_text = "CLEAR BUFFER"
         elif msg_received in (
             'OUT GETSETTING$("CONFIG", "NET", "MAC ADDRESS")',
             '^NMACADDR'
         ):
             response_text = self._mac
-        if not response_text:
+        else:
             return False
         self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
-        client.send(response_text.encode())
+        if response_text == "CLEAR BUFFER":
+            self.clear_buffer()
+        else:
+            client.send(response_text.encode())
         return True

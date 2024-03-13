@@ -12,6 +12,8 @@ class CustomItemModel(QStandardItemModel):
 
 
 def update_model_data(model: QStandardItemModel, data: list[str]):
+    model.blockSignals(True)
     model.clear()
+    model.blockSignals(False)
     for row in data:
         model.appendRow(QStandardItem(row))

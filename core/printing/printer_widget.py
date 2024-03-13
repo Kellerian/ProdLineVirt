@@ -1,9 +1,13 @@
-from PySide6.QtCore import Qt
+from logging import getLogger
+
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QWidget
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
 import qtawesome
+
+from libs.loggers import UI_LOGGER
 from libs.model_processing import update_model_data
 
 
@@ -17,7 +21,7 @@ class PrinterWidget(QWidget, Ui_Form):
 
         self._setup_icon(self.tbRun.isChecked())
         self._model = QStandardItemModel()
-
+        self._log = getLogger(UI_LOGGER)
         self.lstData.setModel(self._model)
         self.lstData.setDragEnabled(True)
         self._printer = self._get_printer_proxy()
@@ -36,11 +40,14 @@ class PrinterWidget(QWidget, Ui_Form):
 
     def _set_printer_buffer_size(self, value: int):
         self._printer.set_buffer_size(value)
+        self._log.debug(f"BUFFER CHANGE: {value}")
 
-    def _model_rows_to_be_removed(self, _, first: int, last: int):
+    def _model_rows_to_be_removed(self, _: QModelIndex, first: int, last: int):
+        self._log.debug(f"ROWS TO BE REMOVED from {first} to {last}")
         for i in range(first, last + 1):
             index = self._model.index(i, 0)
             item_text = self._model.data(index, Qt.ItemDataRole.DisplayRole)
+            self._log.debug(f"REMOVE ROWS: {first} {last} {item_text}")
             self._delete_item(item_text)
 
     def _delete_item(self, row_data: str):
@@ -63,12 +70,10 @@ class PrinterWidget(QWidget, Ui_Form):
         self.lstData.setToolTip(f"БУФФЕР: {buffer_size}")
 
     def _populate_list_with_buffer_data(self, data: list[str]):
-        if not data:
+        if data == self._data_list:
             return
-        new_rows = [row for row in data if row not in self._data_list]
-        if new_rows:
-            self._data_list.extend(new_rows)
-            update_model_data(self._model, self._data_list)
+        self._data_list = data
+        update_model_data(self._model, self._data_list)
 
     def _clear_data(self):
         self._data_list.clear()
