@@ -1,9 +1,9 @@
-from PyQt6.QtCore import pyqtSignal, QObject, QTimer
+from PySide6.QtCore import Signal, QObject, QTimer
 from core.scanning.camera_core import CameraEmul
 
 
 class CameraProxy(QObject):
-    scanned = pyqtSignal(list)
+    scanned = Signal(list)
 
     def __init__(self):
         super().__init__()

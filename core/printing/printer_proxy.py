@@ -1,11 +1,11 @@
-from PyQt6.QtCore import pyqtSignal, QObject, QTimer
+from PySide6.QtCore import Signal, QObject, QTimer
 
 from core.printing.printer_core import PrinterEmul
 
 
 class PrinterProxy(QObject):
-    buffer_size = pyqtSignal(int)
-    buffer_data = pyqtSignal(list)
+    buffer_size = Signal(int)
+    buffer_data = Signal(list)
 
     def __init__(self):
         super().__init__()

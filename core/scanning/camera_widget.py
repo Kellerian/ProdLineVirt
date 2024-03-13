@@ -1,7 +1,7 @@
 import qtawesome
-from PyQt6.QtCore import QTimer
-from PyQt6.QtGui import QStandardItem, QStandardItemModel
-from PyQt6.QtWidgets import QWidget
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QWidget
 from core.scanning.camera_proxy import CameraProxy
 from forms.Camera import Ui_Form
 from libs.model_processing import CustomItemModel

@@ -1,6 +1,6 @@
-from PyQt6.QtCore import QModelIndex
-from PyQt6.QtGui import QStandardItem, QStandardItemModel
-from PyQt6.QtCore import Qt
+from PySide6.QtCore import QModelIndex
+from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtCore import Qt
 
 
 class CustomItemModel(QStandardItemModel):

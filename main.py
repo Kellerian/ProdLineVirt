@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from core.main_ui.line_emul import MainLineField
 from libs.loggers import LOGGERS

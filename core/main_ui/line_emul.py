@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
 from forms.Main import Ui_MainWindow
@@ -45,7 +45,6 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9103))
         self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9104))
         self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9105))
-
 
     def ser_aggr_cam(self):
         self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))

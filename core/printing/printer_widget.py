@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QStandardItemModel
-from PyQt6.QtWidgets import QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QStandardItemModel
+from PySide6.QtWidgets import QWidget
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
 import qtawesome
