@@ -24,6 +24,6 @@ if __name__ == '__main__':
     setup_logging()
     app = QApplication(sys.argv)
     pw = MainLineField()
-    pw.test_tandem()
+    pw.three_aggrs_with_cams()
     pw.show()
     app.exec()

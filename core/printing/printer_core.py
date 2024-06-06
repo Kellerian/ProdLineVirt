@@ -96,9 +96,9 @@ class PrinterEmul:
             return
         if not msg_received:
             return
-        # self._log.debug(f"[{self.name}] NEW MESSAGE: {msg_received}")
         if self._process_status_requests(msg_received, client):
             return
+        self._log.debug(f"[{self.name}] NEW MESSAGE: {msg_received}")
         dm_extracted = extract_barcode_value_from_template(msg_received)
         if not dm_extracted:
             return
@@ -120,11 +120,16 @@ class PrinterEmul:
         current_buffer_size = len(self._print_buffer)
         # available_space = self._max_size - current_buffer_size
         response_text = ""
-        # self._log.debug(
-        #     f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
-        # )
+        self._log.debug(
+            f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
+        )
+        # TEST_RESPONSE = [
+        #     '\x20' if self._print_buffer else '\x00',
+        #     f"0,0,0,0,{current_buffer_size}"
+        # ]
         if msg_received == f"{chr(27)}!?":
-            response_text = '\x00'
+            response_text = '\x20' if self._print_buffer else '\x00'
+            # response_text = TEST_RESPONSE[random.randint(0, 1)]
         elif msg_received == f"{chr(27)}!.":
             response_text = "CLEAR BUFFER"
         elif msg_received == f"~!F":
@@ -143,6 +148,7 @@ class PrinterEmul:
             response_text = f"{self._printed}"
         elif msg_received == "~HS":
             response_text = f"0,0,0,0,{current_buffer_size}"
+            # response_text = TEST_RESPONSE[random.randint(0, 1)]
         elif msg_received == "~S,LABEL":
             response_text = f"{current_buffer_size}"
         # Эмуляция чеквейра
@@ -178,9 +184,11 @@ class PrinterEmul:
             '^NMACADDR'
         ):
             response_text = self._mac
+        elif msg_received == "~S,FEED":
+            return True
         else:
             return False
-        self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
+        # self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
         if response_text == "CLEAR BUFFER":
             self.clear_buffer()
         else:

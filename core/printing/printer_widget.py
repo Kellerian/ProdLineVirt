@@ -5,8 +5,6 @@ from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QWidget
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
-import qtawesome
-
 from libs.loggers import UI_LOGGER
 from libs.model_processing import update_model_data
 
@@ -16,13 +14,11 @@ class PrinterWidget(QWidget, Ui_Form):
     def __init__(self, name: str, port: int):
         super().__init__()
         self.setupUi(self)
-        self.PLAY_ICON = qtawesome.icon('fa5s.play', color="#00FF00")
-        self.STOP_ICON = qtawesome.icon('fa.stop', color="#FF0000")
 
         self._setup_icon(self.tbRun.isChecked())
-        self._model = QStandardItemModel()
+        self.model_out = QStandardItemModel()
         self._log = getLogger(UI_LOGGER)
-        self.lstData.setModel(self._model)
+        self.lstData.setModel(self.model_out)
         self.lstData.setDragEnabled(True)
         self._printer = self._get_printer_proxy()
         self._connect_ui()
@@ -34,7 +30,7 @@ class PrinterWidget(QWidget, Ui_Form):
         self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
         self.spAmount.valueChanged.connect(self._set_printer_buffer_size)
-        self._model.rowsAboutToBeRemoved.connect(
+        self.model_out.rowsAboutToBeRemoved.connect(
             self._model_rows_to_be_removed
         )
 
@@ -45,20 +41,28 @@ class PrinterWidget(QWidget, Ui_Form):
     def _model_rows_to_be_removed(self, _: QModelIndex, first: int, last: int):
         self._log.debug(f"ROWS TO BE REMOVED from {first} to {last}")
         for i in range(first, last + 1):
-            index = self._model.index(i, 0)
-            item_text = self._model.data(index, Qt.ItemDataRole.DisplayRole)
+            index = self.model_out.index(i, 0)
+            item_text = self.model_out.data(index, Qt.ItemDataRole.DisplayRole)
             self._log.debug(f"REMOVE ROWS: {first} {last} {item_text}")
             self._delete_item(item_text)
 
     def _delete_item(self, row_data: str):
-        self._printer.remove(row_data)
-        self._data_list.remove(row_data)
+        try:
+            self._printer.remove(row_data)
+        except ValueError:
+            pass
+        try:
+            self._data_list.remove(row_data)
+        except ValueError:
+            pass
 
     def _setup_icon(self, toggled: bool):
         if toggled:
-            self.tbRun.setIcon(self.STOP_ICON)
+            self.tbRun.setText("S")
+            self.tbRun.setStyleSheet("color: #FF0000")
         else:
-            self.tbRun.setIcon(self.PLAY_ICON)
+            self.tbRun.setText("R")
+            self.tbRun.setStyleSheet("color: #00FF00")
 
     def _get_printer_proxy(self) -> PrinterProxy:
         pp = PrinterProxy()
@@ -73,11 +77,11 @@ class PrinterWidget(QWidget, Ui_Form):
         if data == self._data_list:
             return
         self._data_list = data
-        update_model_data(self._model, self._data_list)
+        update_model_data(self.model_out, self._data_list)
 
     def _clear_data(self):
         self._data_list.clear()
-        self._model.clear()
+        self.model_out.clear()
 
     def run(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():

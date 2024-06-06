@@ -61,7 +61,6 @@ class CameraEmul:
                                f" {connected_client}")
             except BlockingIOError:
                 pass
-            sleep(0.01)
         for client in self._connections.copy():
             client.close()
             self._connections.remove(client)

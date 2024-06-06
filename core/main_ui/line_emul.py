@@ -16,7 +16,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._add(CameraWidget("AGR1.CAM.LOCAL", 27))
         self._add(CameraWidget("AGR2.CAM.LOCAL", 28))
         self._add(CameraWidget("AGR3.CAM.LOCAL", 29))
-        self._add(CameraWidget("VER.CAM.LOCAL", 32))
+        self._add(PrinterWidget("AGR1.PRINT.LOCAL", 9102))
 
     def setup_multiprint(self):
         self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
@@ -38,13 +38,13 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._add(CameraWidget("VER.CAM.LOCAL", 32))
         self._add(PrinterWidget("AGR.PRINT.LOCAL", 9102))
 
-    def three_aggr_levels(self):
+    def three_aggr_levels_count(self):
         self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
         self._add(CameraWidget("DM.CAM.LOCAL", 23))
         self._add(PrinterWidget("AGR1.PRINT.LOCAL", 9102))
         self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9103))
         self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9104))
-        self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9105))
+        self._add(PrinterWidget("AGR4.PRINT.LOCAL", 9105))
 
     def ser_aggr_cam(self):
         self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
@@ -58,6 +58,39 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
         self._add(PrinterWidget("DM1.PRINT.LOCAL", 9102))
         self._add(CameraWidget("DM.CAM.LOCAL", 23))
+
+    def single_serialisation(self):
+        self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
+        self._add(CameraWidget("DM.CAM.LOCAL", 23))
+
+    def three_aggrs_with_cams(self):
+        self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
+        self._add(CameraWidget("DM.CAM.LOCAL", 23))
+        self._add(CameraWidget("AGR1.CAM.LOCAL", 27))
+        self._add(PrinterWidget("AGR1.PRINT.LOCAL", 9102))
+        self._add(CameraWidget("VER1.CAM.LOCAL", 32))
+        self._add(CameraWidget("AGR2.CAM.LOCAL", 28))
+        self._add(PrinterWidget("AGR2.PRINT.LOCAL", 9103))
+        self._add(CameraWidget("VER2.CAM.LOCAL", 33))
+        self._add(CameraWidget("AGR3.CAM.LOCAL", 29))
+        self._add(PrinterWidget("AGR3.PRINT.LOCAL", 9104))
+        self._add(CameraWidget("AGR4.CAM.LOCAL", 30))
+        self._add(PrinterWidget("AGR4.PRINT.LOCAL", 9105))
+
+    def twelve_cams(self):
+        self._add(PrinterWidget("DM.PRINT.LOCAL", 9101))
+        self._add(CameraWidget("DM.CAM.23", 23))
+        self._add(CameraWidget("DM.CAM.24", 24))
+        self._add(CameraWidget("DM.CAM.25", 25))
+        self._add(CameraWidget("DM.CAM.26", 26))
+        self._add(CameraWidget("DM.CAM.27", 27))
+        self._add(CameraWidget("DM.CAM.28", 28))
+        self._add(CameraWidget("DM.CAM.29", 29))
+        self._add(CameraWidget("DM.CAM.30", 30))
+        self._add(CameraWidget("DM.CAM.31", 31))
+        self._add(CameraWidget("DM.CAM.32", 32))
+        self._add(CameraWidget("DM.CAM.33", 33))
+        self._add(CameraWidget("DM.CAM.34", 34))
 
     def _add(self, device: CameraWidget | PrinterWidget):
         self.centralwidget.layout().addWidget(device)

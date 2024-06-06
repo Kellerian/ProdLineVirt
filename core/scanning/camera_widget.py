@@ -1,4 +1,3 @@
-import qtawesome
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QWidget
@@ -11,37 +10,32 @@ class CameraWidget(QWidget, Ui_Form):
     def __init__(self, name: str, port: int):
         super().__init__()
         self.setupUi(self)
-        self.PLAY_ICON = qtawesome.icon('fa5s.play', color="#00FF00")
-        self.STOP_ICON = qtawesome.icon('fa.stop', color="#FF0000")
-
         self._setup_icon(self.tbRun.isChecked())
 
-        self._model_in = CustomItemModel()
-        self.lstData.setModel(self._model_in)
+        self.model_in = CustomItemModel()
+        self.model_out = QStandardItemModel()
+
+        self.lstData.setModel(self.model_in)
         self.lstData.setAcceptDrops(True)
         self.lstData.setDropIndicatorShown(True)
 
-        self._model_out = QStandardItemModel()
-        self.lstProcessed.setModel(self._model_out)
+        self.lstProcessed.setModel(self.model_out)
         self.lstProcessed.setDragEnabled(True)
-
         self._camera = self._get_camera_proxy()
         self._timer_sender = QTimer()
-        self._timer_sender.setInterval(250)
-        # noinspection PyUnresolvedReferences
-        self._timer_sender.timeout.connect(self.send_data)
+        self._timer_sender.setInterval(self.spInterval.value())
         self._connect_ui()
         self.leName.setText(name)
         self.leConnetionStr.setText(str(port))
 
     def send_data(self):
         batch_size = self.spSize.value()
-        if self._model_in.rowCount() < batch_size:
+        if self.model_in.rowCount() < batch_size:
             return
 
         data_to_send: list[str] = []
         for _ in range(batch_size):
-            row = self._model_in.takeRow(0)
+            row = self.model_in.takeRow(0)
             item = row[0]
             data_to_send.append(item.text())
         self._camera.send_data(data_to_send)
@@ -58,6 +52,9 @@ class CameraWidget(QWidget, Ui_Form):
 
         self.cbxGrade.toggled.connect(self.set_grade_settings)
         self.spGradeErrorPercent.valueChanged.connect(self.set_grade_settings)
+        self.spInterval.valueChanged.connect(self.set_interval_settings)
+        # noinspection PyUnresolvedReferences
+        self._timer_sender.timeout.connect(self.send_data)
 
     def _get_camera_proxy(self) -> CameraProxy:
         cp = CameraProxy()
@@ -66,7 +63,7 @@ class CameraWidget(QWidget, Ui_Form):
 
     def populate_scanned_data(self, data: list[str]):
         for row in data:
-            self._model_out.appendRow(QStandardItem(row))
+            self.model_out.appendRow(QStandardItem(row))
 
     def set_no_read_settings(self):
         self._camera.set_noread(
@@ -78,6 +75,9 @@ class CameraWidget(QWidget, Ui_Form):
             self.cbxGrade.isChecked(), self.spGradeErrorPercent.value()
         )
 
+    def set_interval_settings(self, value: int):
+        self._timer_sender.setInterval(value)
+
     def set_dups_settings(self):
         self._camera.set_duplicates(
             self.cbxDups.isChecked(), self.spDupsPercent.value()
@@ -85,13 +85,15 @@ class CameraWidget(QWidget, Ui_Form):
 
     def _setup_icon(self, toggled: bool):
         if toggled:
-            self.tbRun.setIcon(self.STOP_ICON)
+            self.tbRun.setText("S")
+            self.tbRun.setStyleSheet("color: #FF0000")
         else:
-            self.tbRun.setIcon(self.PLAY_ICON)
+            self.tbRun.setText("R")
+            self.tbRun.setStyleSheet("color: #00FF00")
 
     def _clear_data(self):
-        self._model_in.clear()
-        self._model_out.clear()
+        self.model_in.clear()
+        self.model_out.clear()
 
     def run(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():

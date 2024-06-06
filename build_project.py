@@ -3,7 +3,6 @@ from pathlib import Path
 from shutil import rmtree
 import PyInstaller.__main__ as make_exe
 from multiprocessing import Pool, cpu_count
-import os
 
 
 ROOT_DIR = Path(__file__).parent
@@ -16,8 +15,7 @@ PROJECT_FILES = [
 ]
 
 
-def generate_ui_files():
-    print(os.environ['VIRTUAL_ENV'])
+def generate_ui_files() -> None:
     commands = []
     for path_object in ROOT_DIR.glob('**/*.ui'):
         if path_object.is_file() and path_object.parent.name == 'ui':
@@ -28,7 +26,6 @@ def generate_ui_files():
             print(f"Generating .py file for {file_to_convert}")
             command = (f"pyside6-uic {file_to_convert} -o {output_file} "
                        f"--rc-prefix")
-            print(command)
             commands.append(command)
     with Pool(processes=cpu_count()) as p_pool:
         p_pool.map(run_external, commands)
