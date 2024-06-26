@@ -1,0 +1,56 @@
+{
+    "printers": [
+        {
+            "name": "PRN_9101",
+            "port": 9101,
+            "buffer": 1
+        },
+        {
+            "name": "PRN_9102",
+            "port": 9102,
+            "buffer": 1
+        }
+    ],
+    "cameras": [
+        {
+            "name": "CAM_23",
+            "port": 23,
+            "config": {
+                "packet_size": 1,
+                "interval": 150,
+                "gen_no_read": false,
+                "no_read_perc": 0,
+                "gen_duplicates": false,
+                "duplicates_perc": 0,
+                "gen_grade": false,
+                "grade_perc": 0
+            }
+        },
+        {
+            "name": "CAM_24",
+            "port": 24,
+            "config": {
+                "packet_size": 1,
+                "interval": 250,
+                "gen_no_read": false,
+                "no_read_perc": 0,
+                "gen_duplicates": false,
+                "duplicates_perc": 0,
+                "gen_grade": false,
+                "grade_perc": 0
+            }
+        }
+    ],
+    "transporters": [
+        {
+            "take_from": "PRN_9101",
+            "give_to": "CAM_23",
+            "interval": 150
+        },
+        {
+            "take_from": "PRN_9102",
+            "give_to": "CAM_24",
+            "interval": 250
+        }
+    ]
+}
