@@ -2,6 +2,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QWidget
 from core.scanning.camera_proxy import CameraProxy
+from core.scanning.data import CameraConfig, CameraParams
 from forms.Camera import Ui_Form
 from libs.model_processing import CustomItemModel
 
@@ -11,7 +12,7 @@ class CameraWidget(QWidget, Ui_Form):
         super().__init__()
         self.setupUi(self)
         self._setup_icon(self.tbRun.isChecked())
-
+        self.name = name
         self.model_in = CustomItemModel()
         self.model_out = QStandardItemModel()
 
@@ -27,6 +28,8 @@ class CameraWidget(QWidget, Ui_Form):
         self._connect_ui()
         self.leName.setText(name)
         self.leConnetionStr.setText(str(port))
+        self.leName.setEnabled(False)
+        self.leConnetionStr.setEnabled(False)
 
     def send_data(self):
         batch_size = self.spSize.value()
@@ -119,3 +122,30 @@ class CameraWidget(QWidget, Ui_Form):
         self.set_no_read_settings()
         self.set_dups_settings()
         self.set_grade_settings()
+
+    def load_options(self, params: CameraParams):
+        self.spSize.setValue(params.packet_size)
+        self.spInterval.setValue(params.interval)
+        self.cbxNoRead.setChecked(params.gen_no_read)
+        self.spNoReadPercent.setValue(params.no_read_perc)
+        self.cbxDups.setChecked(params.gen_duplicates)
+        self.spDupsPercent.setValue(params.duplicates_perc)
+        self.cbxGrade.setChecked(params.gen_grade)
+        self.spDupsPercent.setValue(params.grade_perc)
+
+    def options(self) -> CameraConfig:
+        params = CameraParams(
+            packet_size=self.spSize.value(),
+            interval=self.spInterval.value(),
+            gen_no_read=self.cbxNoRead.isChecked(),
+            no_read_perc=self.spNoReadPercent.value(),
+            gen_duplicates=self.cbxDups.isChecked(),
+            duplicates_perc=self.spDupsPercent.value(),
+            gen_grade=self.cbxGrade.isChecked(),
+            grade_perc=self.spGradeErrorPercent.value()
+        )
+        return CameraConfig(
+            name=self.name,
+            port=int(self.leConnetionStr.text()),
+            config=params
+        )

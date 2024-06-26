@@ -25,7 +25,7 @@ def extract_barcode_value_from_template(msg_received: str) -> list[str]:
             row = row.replace('^FH^FD_7e', '')
             row = row.replace('^FS', '')
             dm_extracted = row.strip()
-        if dm_extracted:
+        if dm_extracted and len(dm_extracted) >= 13:
             extracted_data.append(dm_extracted)
     return extracted_data
 

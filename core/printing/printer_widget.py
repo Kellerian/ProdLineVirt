@@ -3,6 +3,8 @@ from logging import getLogger
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QWidget
+
+from core.printing.data import PrinterConfig
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
 from libs.loggers import UI_LOGGER
@@ -11,10 +13,11 @@ from libs.model_processing import update_model_data
 
 class PrinterWidget(QWidget, Ui_Form):
 
-    def __init__(self, name: str, port: int):
+    def __init__(self, name: str, port: int, buffer: int = 1):
         super().__init__()
         self.setupUi(self)
-
+        self.name = name
+        self._data_list: list[str] = []
         self._setup_icon(self.tbRun.isChecked())
         self.model_out = QStandardItemModel()
         self._log = getLogger(UI_LOGGER)
@@ -22,9 +25,11 @@ class PrinterWidget(QWidget, Ui_Form):
         self.lstData.setDragEnabled(True)
         self._printer = self._get_printer_proxy()
         self._connect_ui()
-        self._data_list: list[str] = []
         self.leName.setText(name)
         self.leConnetionStr.setText(str(port))
+        self.leName.setEnabled(False)
+        self.leConnetionStr.setEnabled(False)
+        self.spAmount.setValue(buffer)
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
@@ -101,3 +106,10 @@ class PrinterWidget(QWidget, Ui_Form):
         else:
             self._printer.stop()
             self._clear_data()
+
+    def options(self) -> PrinterConfig:
+        return PrinterConfig(
+            name=self.name,
+            port=int(self.leConnetionStr.text()),
+            buffer=self.spAmount.value()
+        )

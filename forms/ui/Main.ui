@@ -11,11 +11,227 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Эмулятор оборудования линии</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QScrollBar {
+	background: none;
+	border: 1px;
+	margin: 1;
+	padding: 1;
+	width: 15px;
+}
+
+QScrollBar:handle {
+	border: 1px solid #FF17365D;
+	background: #226091;
+	border-radius: 3px;
+	min-height: 45px;
+	min-width: 15px;
+}
+
+QScrollBar:sub-line {
+	background: none;
+	border: none;
+	height: 0px;
+	padding: 0;
+	width: 0px;
+}
+
+QScrollBar:add-line {
+	background:  none;
+	border: none;
+	height: 0px;	
+	padding: 0;
+	width: 0px;
+}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout"/>
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
+    <property name="spacing">
+     <number>1</number>
+    </property>
+    <property name="leftMargin">
+     <number>1</number>
+    </property>
+    <property name="topMargin">
+     <number>1</number>
+    </property>
+    <property name="rightMargin">
+     <number>1</number>
+    </property>
+    <property name="bottomMargin">
+     <number>1</number>
+    </property>
+    <item>
+     <widget class="QScrollArea" name="scrollArea_2">
+      <property name="minimumSize">
+       <size>
+        <width>290</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>290</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scaTransporters">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>288</width>
+         <height>520</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>280</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>290</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <property name="leftMargin">
+         <number>3</number>
+        </property>
+        <property name="topMargin">
+         <number>3</number>
+        </property>
+        <property name="rightMargin">
+         <number>3</number>
+        </property>
+        <property name="bottomMargin">
+         <number>3</number>
+        </property>
+        <item>
+         <layout class="QVBoxLayout" name="transporters_layout">
+          <property name="spacing">
+           <number>1</number>
+          </property>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scaDevices">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>505</width>
+         <height>520</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
+   </layout>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Добавить</string>
+    </property>
+    <addaction name="acAddCamera"/>
+    <addaction name="acAddPrinter"/>
+    <addaction name="separator"/>
+    <addaction name="acAddTransporter"/>
+   </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Файл</string>
+    </property>
+    <addaction name="acOpen"/>
+    <addaction name="acSaveAs"/>
+    <addaction name="acSave"/>
+    <addaction name="separator"/>
+    <addaction name="acClose"/>
+   </widget>
+   <addaction name="menu_2"/>
+   <addaction name="menu"/>
+  </widget>
+  <action name="acAddCamera">
+   <property name="text">
+    <string>Камера</string>
+   </property>
+  </action>
+  <action name="acAddPrinter">
+   <property name="text">
+    <string>Принтер</string>
+   </property>
+  </action>
+  <action name="acAddTransporter">
+   <property name="text">
+    <string>Перевозчик</string>
+   </property>
+  </action>
+  <action name="acOpen">
+   <property name="text">
+    <string>Открыть...</string>
+   </property>
+  </action>
+  <action name="acSaveAs">
+   <property name="text">
+    <string>Сохранить как...</string>
+   </property>
+  </action>
+  <action name="acSave">
+   <property name="text">
+    <string>Сохранить</string>
+   </property>
+  </action>
+  <action name="acClose">
+   <property name="text">
+    <string>Закрыть</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

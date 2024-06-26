@@ -6,9 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>270</width>
-    <height>400</height>
+    <width>260</width>
+    <height>250</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>260</width>
+    <height>250</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>260</width>
+    <height>16777215</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Printer</string>
@@ -17,14 +35,31 @@
    <string notr="true">QToolButton {
     qproperty-alignment: AlignCenter;
 	border: 1px solid #FF17365D;
+    border-radius: 3px;
 	background-color: #226091;
 	padding: 3px;
 	color: #FFFFFF;
-	font: 10pt &quot;Arial Black&quot;;
+	font: bold 12pt &quot;DejaVu Sans Mono&quot;;
+}
+
+QCheckBox {
+	font: bold 10pt &quot;DejaVu Sans Mono&quot;;
+}
+
+QLineEdit {
+	font: 10pt &quot;DejaVu Sans Mono&quot;;
+}
+
+QLabel {
+	font: bold 10pt &quot;DejaVu Sans Mono&quot;;
 }
 
 QToolButton:hover {
 	color: #f0b321;
+}
+
+QListView {
+	font: 8pt &quot;DejaVu Sans Mono&quot;;
 }
 
 QToolButton:pressed,
@@ -42,12 +77,100 @@ QSpinBox {
 	border-radius: 3px;
 	selection-background-color:#19466a;
 	selection-color: #f0b321;
-	font: 10pt &quot;Arial Black&quot;;
+	font: bold 10pt &quot;DejaVu Sans Mono&quot;;
 }
 
 QSpinBox::up-button { subcontrol-origin: content;  subcontrol-position: right;  width:20px; height: 20px; }
 QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  width:20px; height: 20px; }
-</string>
+
+QComboBox {
+    border: 1px solid #17365D;
+    border-radius: 3px;
+	font: bold 10pt &quot;DejaVu Sans Mono&quot;;
+	color: #f0b321;
+    background-color: #226091;
+	padding: 5px;
+}
+
+QComboBox:!editable:on {
+    color: #f0b321;
+	background-color: #19466a;
+	border: 1px solid #f0b321;
+}
+
+QComboBox:on {
+    padding-top: 3px;
+    padding-left: 4px;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: right;
+    width: 30px;
+	background-color: #19466a;
+    border-left-width: 1px;
+    border-left-color: #17365D;
+    border-left-style: solid;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+QComboBox::down-arrow:on {
+    top: 1px;
+    left: 1px;
+}
+
+QComboBox QListView {
+    selection-background-color: #f0b321;
+	selection-color: #19466a;
+	color: #f0b321;
+	background-color: #19466a;
+	border: 2px solid #f0b321;
+}
+
+QComboBox QToolTip {
+    font: bold 10pt &quot;DejaVu Sans Mono&quot;;
+	color: #f0b321;
+	background-color: #19466a;
+	border: 2px solid #f0b321;
+    border-radius: 3px;
+}
+
+QComboBox#cbxProduct QAbstractItemView {
+	min-width: 800px;
+}
+
+QScrollBar {
+	background: none;
+	border: 1px;
+	margin: 1;
+	padding: 1;
+	width: 15px;
+}
+
+QScrollBar:handle {
+	border: 1px solid #FF17365D;
+	background: #226091;
+	border-radius: 3px;
+	min-height: 45px;
+	min-width: 15px;
+}
+
+QScrollBar:sub-line {
+	background: none;
+	border: none;
+	height: 0px;
+	padding: 0;
+	width: 0px;
+}
+
+QScrollBar:add-line {
+	background:  none;
+	border: none;
+	height: 0px;	
+	padding: 0;
+	width: 0px;
+}</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
    <property name="spacing">
@@ -66,12 +189,12 @@ QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  w
     <number>1</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,1,0">
      <property name="spacing">
-      <number>0</number>
+      <number>1</number>
      </property>
      <item>
-      <widget class="QLineEdit" name="leConnetionStr">
+      <widget class="QLineEdit" name="leName">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -80,8 +203,34 @@ QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  w
        </property>
        <property name="font">
         <font>
-         <family>Arial</family>
-         <pointsize>12</pointsize>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>10</pointsize>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="maxLength">
+        <number>25</number>
+       </property>
+       <property name="placeholderText">
+        <string>Название устройства</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="leConnetionStr">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>10</pointsize>
+         <italic>false</italic>
+         <bold>false</bold>
         </font>
        </property>
        <property name="placeholderText">
@@ -105,15 +254,14 @@ QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  w
        </property>
        <property name="font">
         <font>
-         <family>Arial Black</family>
-         <pointsize>10</pointsize>
-         <weight>50</weight>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>12</pointsize>
          <italic>false</italic>
-         <bold>false</bold>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
-        <string/>
+        <string>R</string>
        </property>
        <property name="iconSize">
         <size>
@@ -137,24 +285,20 @@ QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  w
       <number>0</number>
      </property>
      <item>
-      <widget class="QLineEdit" name="leName">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QLabel" name="label">
        <property name="font">
         <font>
-         <family>Arial</family>
-         <pointsize>12</pointsize>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>10</pointsize>
+         <italic>false</italic>
+         <bold>true</bold>
         </font>
        </property>
-       <property name="maxLength">
-        <number>25</number>
+       <property name="text">
+        <string>Буфер:</string>
        </property>
-       <property name="placeholderText">
-        <string>Название устройства</string>
+       <property name="indent">
+        <number>5</number>
        </property>
       </widget>
      </item>
@@ -168,7 +312,7 @@ QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  w
        </property>
        <property name="minimumSize">
         <size>
-         <width>75</width>
+         <width>100</width>
          <height>0</height>
         </size>
        </property>
@@ -207,8 +351,10 @@ QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  w
     <widget class="QListView" name="lstData">
      <property name="font">
       <font>
-       <family>Arial Narrow</family>
-       <pointsize>10</pointsize>
+       <family>DejaVu Sans Mono</family>
+       <pointsize>8</pointsize>
+       <italic>false</italic>
+       <bold>false</bold>
       </font>
      </property>
      <property name="editTriggers">

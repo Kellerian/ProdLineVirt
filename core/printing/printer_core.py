@@ -120,9 +120,9 @@ class PrinterEmul:
         current_buffer_size = len(self._print_buffer)
         # available_space = self._max_size - current_buffer_size
         response_text = ""
-        self._log.debug(
-            f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
-        )
+        # self._log.debug(
+        #     f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
+        # )
         # TEST_RESPONSE = [
         #     '\x20' if self._print_buffer else '\x00',
         #     f"0,0,0,0,{current_buffer_size}"
