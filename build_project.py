@@ -87,5 +87,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-    generate_ui_files()
+    main()
+    # generate_ui_files()

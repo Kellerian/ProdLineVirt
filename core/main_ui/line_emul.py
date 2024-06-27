@@ -10,6 +10,7 @@ from core.scanning.data import CameraConfig
 from core.transporting.data import TransporterConfig
 from core.transporting.transporter_widget import TransporterWidget
 from forms.Main import Ui_MainWindow
+from libs.media import get_icon
 
 
 class MainLineField(QMainWindow, Ui_MainWindow):
@@ -17,6 +18,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self._app_title = "Эмулятор производственной линии"
+        self.setWindowIcon(get_icon())
         self._device_widgets: dict[int, CameraWidget | PrinterWidget] = {}
         self._transporter_widgets: dict[int, TransporterWidget] = {}
         self.cam_port = self.cam_port_generator()
@@ -152,6 +154,18 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._load_cameras(config.cameras, devices)
         self._load_transporters(config.transporters, devices)
 
+    def clear_ui(self):
+        for key in self._device_widgets.copy():
+            dev = self._device_widgets.pop(key)
+            dev.setParent(None)
+            dev.run(False)
+            dev.deleteLater()
+        for key in self._transporter_widgets.copy():
+            trn = self._transporter_widgets.pop(key)
+            trn.setParent(None)
+            trn.run(False)
+            trn.deleteLater()
+
     def open_config(self):
         file_data = QFileDialog.getOpenFileName(
             self, caption="Выберите файл настроек *.json",
@@ -164,6 +178,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         with open(file_path, 'r') as f:
             cfg_file = f.read()
         cfg = ConfigFile.model_validate_json(cfg_file)
+        self.clear_ui()
         self.process_config(cfg)
         self._active_file = file_path
         self.update_title()

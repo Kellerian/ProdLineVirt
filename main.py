@@ -1,5 +1,8 @@
 import logging
 import sys
+from pathlib import Path
+
+import client_info
 
 from PySide6.QtWidgets import QApplication
 
@@ -18,6 +21,14 @@ def setup_logging():
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setFormatter(formatter)
         root.addHandler(stream_handler)
+
+
+def setup_pathes():
+    client_info.RUNDIR = Path(__file__).parent
+    cur_path = Path(__file__).parent
+    if getattr(sys, 'frozen', False):
+        cur_path = Path(sys.executable).parent
+    client_info.WORKDIR = cur_path
 
 
 if __name__ == '__main__':

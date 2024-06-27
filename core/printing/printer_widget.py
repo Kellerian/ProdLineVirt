@@ -2,11 +2,12 @@ from logging import getLogger
 
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QStandardItemModel
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QLabel, QListView, QWidget
 
 from core.printing.data import PrinterConfig
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
+from libs.datamatrix import get_gs1dm_pixmap
 from libs.loggers import UI_LOGGER
 from libs.model_processing import update_model_data
 
@@ -30,6 +31,7 @@ class PrinterWidget(QWidget, Ui_Form):
         self.leName.setEnabled(False)
         self.leConnetionStr.setEnabled(False)
         self.spAmount.setValue(buffer)
+        self._lbl: QLabel | None = None
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
@@ -38,6 +40,7 @@ class PrinterWidget(QWidget, Ui_Form):
         self.model_out.rowsAboutToBeRemoved.connect(
             self._model_rows_to_be_removed
         )
+        self.lstData.doubleClicked.connect(self.create_image)
 
     def _set_printer_buffer_size(self, value: int):
         self._printer.set_buffer_size(value)
@@ -113,3 +116,12 @@ class PrinterWidget(QWidget, Ui_Form):
             port=int(self.leConnetionStr.text()),
             buffer=self.spAmount.value()
         )
+
+    def create_image(self, idx: QModelIndex):
+        sender: QListView = self.sender()
+        model = sender.model()
+        data = model.data(idx, Qt.ItemDataRole.DisplayRole)
+        pix = get_gs1dm_pixmap(data)
+        self._lbl = QLabel()
+        self._lbl.setPixmap(pix)
+        self._lbl.show()

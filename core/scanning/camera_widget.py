@@ -1,13 +1,11 @@
-from PIL import Image
-from PIL.ImageQt import ImageQt
 from PySide6.QtCore import QModelIndex, Qt, QTimer
-from PySide6.QtGui import QPixmap, QStandardItem, QStandardItemModel
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QLabel, QListView, QWidget
 from core.scanning.camera_proxy import CameraProxy
 from core.scanning.data import CameraConfig, CameraParams
 from forms.Camera import Ui_Form
+from libs.datamatrix import get_gs1dm_pixmap
 from libs.model_processing import CustomItemModel
-from pylibdmtx.pylibdmtx import encode
 
 
 class CameraWidget(QWidget, Ui_Form):
@@ -33,6 +31,7 @@ class CameraWidget(QWidget, Ui_Form):
         self.leConnetionStr.setText(str(port))
         self.leName.setEnabled(False)
         self.leConnetionStr.setEnabled(False)
+        self._lbl: QLabel | None = None
 
     def send_data(self):
         batch_size = self.spSize.value()
@@ -155,42 +154,11 @@ class CameraWidget(QWidget, Ui_Form):
             config=params
         )
 
-    @staticmethod
-    def generate_datamatrix(data: str) -> Image:
-        encoded = encode(f"${data}".encode('utf-8'), fnc1=36)
-        img = Image.frombytes(
-            'RGB', (encoded.width, encoded.height), encoded.pixels
-        )
-        return img
-
     def create_image(self, idx: QModelIndex):
         sender: QListView = self.sender()
         model = sender.model()
         data = model.data(idx, Qt.ItemDataRole.DisplayRole)
-        img = self.generate_datamatrix(data)
-        converted_img = img.convert("RGBA")
-        qim = ImageQt(converted_img)
-        pix = QPixmap.fromImage(qim)
-        self.label = QLabel()
-        self.label.setPixmap(pix)
-        self.label.show()
-
-
-if __name__ == '__main__':
-    from PySide6.QtWidgets import QApplication
-    import sys
-    app = QApplication(sys.argv)
-    data = "0103665585002190215;(RHE&Sap8S%93dGVz"
-    GS232 = '$'
-    dm_data = f"{GS232}{data}".encode()
-    encoded = encode(dm_data, fnc1=ord('$'))
-    img = Image.frombytes(
-        'RGB', (encoded.width, encoded.height), encoded.pixels
-    )
-    converted_img = img.convert("RGBA")
-    qim = ImageQt(converted_img)
-    pix = QPixmap.fromImage(qim)
-    label = QLabel()
-    label.setPixmap(pix)
-    label.show()
-    app.exec()
+        pix = get_gs1dm_pixmap(data)
+        self._lbl = QLabel()
+        self._lbl.setPixmap(pix)
+        self._lbl.show()
