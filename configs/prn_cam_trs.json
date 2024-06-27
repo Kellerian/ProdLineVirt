@@ -1,0 +1,32 @@
+{
+    "printers": [
+        {
+            "name": "PRN_9101",
+            "port": 9101,
+            "buffer": 1
+        }
+    ],
+    "cameras": [
+        {
+            "name": "CAM_23",
+            "port": 23,
+            "config": {
+                "packet_size": 1,
+                "interval": 50,
+                "gen_no_read": false,
+                "no_read_perc": 0,
+                "gen_duplicates": false,
+                "duplicates_perc": 0,
+                "gen_grade": false,
+                "grade_perc": 0
+            }
+        }
+    ],
+    "transporters": [
+        {
+            "take_from": "PRN_9101",
+            "give_to": "CAM_23",
+            "interval": 50
+        }
+    ]
+}

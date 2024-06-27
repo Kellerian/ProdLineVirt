@@ -29,8 +29,6 @@ class CameraWidget(QWidget, Ui_Form):
         self._connect_ui()
         self.leName.setText(name)
         self.leConnetionStr.setText(str(port))
-        self.leName.setEnabled(False)
-        self.leConnetionStr.setEnabled(False)
         self._lbl: QLabel | None = None
 
     def send_data(self):
