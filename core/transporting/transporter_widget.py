@@ -131,9 +131,6 @@ class TransporterWidget(QWidget, Ui_Form):
             )
             return
         if not self.model_in.rowCount():
-            self._log.warning(
-                f"Нет данных IN:{self.model_in.rowCount()}"
-            )
             return
         row = self.model_in.takeRow(0)
         self.model_out.appendRow(row)
