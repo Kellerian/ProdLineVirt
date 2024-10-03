@@ -9,7 +9,6 @@ class CameraProxy(QObject):
         super().__init__()
         self._camera: CameraEmul | None = None
         self._t_sent = self._get_timer()
-        # noinspection PyUnresolvedReferences
         self._t_sent.timeout.connect(self._get_scanned_data)
 
     @staticmethod
@@ -52,5 +51,4 @@ class CameraProxy(QObject):
 
     def _get_scanned_data(self):
         sent_data = self._camera.get_sent_data()
-        # noinspection PyUnresolvedReferences
         self.scanned.emit(sent_data)

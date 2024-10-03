@@ -26,7 +26,7 @@
    <string>Camera</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QToolButton {
+   <string notr="true">QToolButton, QPushButton {
     qproperty-alignment: AlignCenter;
 	border: 1px solid #FF17365D;
     border-radius: 3px;
@@ -48,6 +48,7 @@ QLabel {
 	font: bold 10pt &quot;DejaVu Sans Mono&quot;;
 }
 
+QPushButton:hover,
 QToolButton:hover {
 	color: #f0b321;
 }
@@ -56,6 +57,8 @@ QListView {
 	font: 8pt &quot;DejaVu Sans Mono&quot;;
 }
 
+QPushButton:pressed,
+QPushButton:checked,
 QToolButton:pressed,
 QToolButtont:checked {
 	color: #f0b321;
@@ -515,9 +518,9 @@ QTabBar::tab:!selected {
         </layout>
        </item>
        <item>
-        <widget class="QLabel" name="label_2">
+        <widget class="QPushButton" name="btnSendError">
          <property name="text">
-          <string/>
+          <string>Отправить error</string>
          </property>
         </widget>
        </item>

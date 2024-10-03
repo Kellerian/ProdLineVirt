@@ -66,7 +66,8 @@ class CameraEmul:
             self._connections.remove(client)
 
     def _can_process_data_to_send(self) -> bool:
-        return len(self._connections) > 0 and len(self._to_send) > 0
+        # return len(self._connections) > 0 and len(self._to_send) > 0
+        return len(self._to_send) > 0
 
     def _run_processing_thread(self):
         while self._can_run:
@@ -80,7 +81,8 @@ class CameraEmul:
                 processed_messages.append((p_message, is_ok, message))
             self._send_message([msg for msg, _, _ in processed_messages])
             self._sent.extend(
-                [msg for _, is_ok, msg in processed_messages if is_ok]
+                [p_message for p_message, is_ok, msg in
+                processed_messages if is_ok]
             )
 
     def _process_message(self, message: str) -> tuple[str, bool]:
@@ -88,11 +90,16 @@ class CameraEmul:
         if self._noread and is_error(self._noread_errs):
             message = 'error'
             return message, False
-        if self._grade and is_error(self._grade_errs):
-            message += f'@{choice(BAD_CODES)}'
-            is_good = False
-        else:
-            message += f'@{choice(GOOD_CODES)}'
+        if self._grade:
+            if is_error(self._grade_errs):
+                if message[-2] == '@':
+                    message = message[:-2]
+                message += f'@{choice(BAD_CODES)}'
+                is_good = False
+            else:
+                if message[-2] == '@':
+                    message = message[:-2]
+                message += f'@{choice(GOOD_CODES)}'
         if self._dups and is_error(self._dups_errs):
             message = "\n\r".join([message, message])
         return message, is_good

@@ -61,6 +61,11 @@ class CameraWidget(QWidget, Ui_Form):
         self.lstData.doubleClicked.connect(self.create_image)
         self.lstProcessed.doubleClicked.connect(self.create_image)
 
+        self.btnSendError.clicked.connect(self._send_error)
+
+    def _send_error(self):
+        self.model_in.appendRow(QStandardItem('error'))
+
     def _get_camera_proxy(self) -> CameraProxy:
         cp = CameraProxy()
         cp.scanned.connect(self.populate_scanned_data)
@@ -106,6 +111,7 @@ class CameraWidget(QWidget, Ui_Form):
             return
         self.leName.setDisabled(toggled)
         self.leConnetionStr.setDisabled(toggled)
+        self.name = self.leName.text()
         if toggled:
             name = self.leName.text()
             try:

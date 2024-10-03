@@ -17,8 +17,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QCheckBox,
     QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QListView, QSizePolicy, QSpinBox, QTabWidget,
-    QToolButton, QVBoxLayout, QWidget)
+    QListView, QPushButton, QSizePolicy, QSpinBox,
+    QTabWidget, QToolButton, QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -27,7 +27,7 @@ class Ui_Form(object):
         Form.resize(260, 250)
         Form.setMinimumSize(QSize(260, 250))
         Form.setMaximumSize(QSize(260, 16777215))
-        Form.setStyleSheet(u"QToolButton {\n"
+        Form.setStyleSheet(u"QToolButton, QPushButton {\n"
 "    qproperty-alignment: AlignCenter;\n"
 "	border: 1px solid #FF17365D;\n"
 "    border-radius: 3px;\n"
@@ -49,6 +49,7 @@ class Ui_Form(object):
 "	font: bold 10pt \"DejaVu Sans Mono\";\n"
 "}\n"
 "\n"
+"QPushButton:hover,\n"
 "QToolButton:hover {\n"
 "	color: #f0b321;\n"
 "}\n"
@@ -57,6 +58,8 @@ class Ui_Form(object):
 "	font: 8pt \"DejaVu Sans Mono\";\n"
 "}\n"
 "\n"
+"QPushButton:pressed,\n"
+"QPushButton:checked,\n"
 "QToolButton:pressed,\n"
 "QToolButtont:checked {\n"
 "	color: #f0b321;\n"
@@ -71,12 +74,12 @@ class Ui_Form(object):
 "	background-color: #226091;\n"
 "	border-radius: 3px;\n"
 "	selection-background-color:#19466a;\n"
-"	selection-color: #f0b321;\n"
+"	selection-"
+                        "color: #f0b321;\n"
 "	font: bold 10pt \"DejaVu Sans Mono\";\n"
 "}\n"
 "\n"
-"QSpinBox::up"
-                        "-button { subcontrol-origin: content;  subcontrol-position: right;  width:20px; height: 20px; }\n"
+"QSpinBox::up-button { subcontrol-origin: content;  subcontrol-position: right;  width:20px; height: 20px; }\n"
 "QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  width:20px; height: 20px; }\n"
 "\n"
 "QComboBox {\n"
@@ -108,13 +111,13 @@ class Ui_Form(object):
 "    border-left-color: #17365D;\n"
 "    border-left-style: solid;\n"
 "    border-top-right-radius: 5px;\n"
-"    border-bottom-right-radius: 5px;\n"
+"    border-b"
+                        "ottom-right-radius: 5px;\n"
 "}\n"
 "\n"
 "QComboBox::down-arrow:on {\n"
 "    top: 1px;\n"
-""
-                        "    left: 1px;\n"
+"    left: 1px;\n"
 "}\n"
 "\n"
 "QComboBox QListView {\n"
@@ -161,13 +164,13 @@ class Ui_Form(object):
 "	width: 0px;\n"
 "}\n"
 "\n"
-"QScrollBar:add-line {\n"
+"QScrollBar:add-lin"
+                        "e {\n"
 "	background:  none;\n"
 "	border: none;\n"
 "	height: 0px;	\n"
 "	padding: 0;\n"
-"	w"
-                        "idth: 0px;\n"
+"	width: 0px;\n"
 "}\n"
 "\n"
 "QTabWidget::pane {\n"
@@ -200,7 +203,8 @@ class Ui_Form(object):
 "	font: bold 8pt \"DejaVu Sans Mono\"\n"
 "}\n"
 "\n"
-"QTabBar::tab:!selected {\n"
+"QTabBar::ta"
+                        "b:!selected {\n"
 "    margin-top: 1px;\n"
 "	font: 8pt \"DejaVu Sans Mono\"\n"
 "}")
@@ -342,10 +346,10 @@ class Ui_Form(object):
 
         self.verticalLayout_3.addLayout(self.horizontalLayout_6)
 
-        self.label_2 = QLabel(self.tabWidgetPage1)
-        self.label_2.setObjectName(u"label_2")
+        self.btnSendError = QPushButton(self.tabWidgetPage1)
+        self.btnSendError.setObjectName(u"btnSendError")
 
-        self.verticalLayout_3.addWidget(self.label_2)
+        self.verticalLayout_3.addWidget(self.btnSendError)
 
         self.tabWidget.addTab(self.tabWidgetPage1, "")
         self.tabWidgetPage2 = QWidget()
@@ -537,7 +541,7 @@ class Ui_Form(object):
         self.spSize.setSuffix(QCoreApplication.translate("Form", u" \u043a\u043c", None))
         self.label_4.setText(QCoreApplication.translate("Form", u"\u041f\u0415\u0420\u0415\u0414\u0410\u0412\u0410\u0422\u042c \u041a\u0410\u0416\u0414\u042b\u0415:", None))
         self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
-        self.label_2.setText("")
+        self.btnSendError.setText(QCoreApplication.translate("Form", u"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c error", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabWidgetPage1), QCoreApplication.translate("Form", u"\u041e\u0431\u043c\u0435\u043d", None))
         self.cbxNoRead.setText(QCoreApplication.translate("Form", u"NO READ", None))
         self.spNoReadPercent.setSuffix(QCoreApplication.translate("Form", u" %", None))

@@ -95,6 +95,7 @@ class PrinterWidget(QWidget, Ui_Form):
             return
         self.leName.setDisabled(toggled)
         self.leConnetionStr.setDisabled(toggled)
+        self.name = self.leName.text()
         if toggled:
             name = self.leName.text()
             buffer_size = self.spAmount.value()

@@ -98,7 +98,9 @@ class PrinterEmul:
             return
         if self._process_status_requests(msg_received, client):
             return
-        self._log.debug(f"[{self.name}] NEW MESSAGE: {msg_received}")
+        self._log.debug(
+            f"[{self.name}] MSG FROM {client.getsockname()}: {msg_received}"
+        )
         dm_extracted = extract_barcode_value_from_template(msg_received)
         if not dm_extracted:
             return
@@ -143,7 +145,7 @@ class PrinterEmul:
         elif msg_received == "~S,CHECK":
             response_text = '00'
         elif msg_received == "~S,STATUS":
-            response_text = '00,00000'
+            response_text = f'00,{current_buffer_size:05d}'
         elif msg_received == "OUT @LABEL":
             response_text = f"{self._printed}"
         elif msg_received == "~HS":
@@ -155,8 +157,8 @@ class PrinterEmul:
         elif msg_received == "START":
             response_text = "START ON"
         elif msg_received == "STOP":
-            client.send("STOP CMD".encode())
-            client.send("STOP LINE".encode())
+            client.sendall("STOP CMD".encode())
+            client.sendall("STOP LINE".encode())
             return True
         elif "ORDER" in msg_received:
             order_id = int(msg_received.split("=")[1])
@@ -192,5 +194,7 @@ class PrinterEmul:
         if response_text == "CLEAR BUFFER":
             self.clear_buffer()
         else:
-            client.send(response_text.encode())
+            self._log.debug(f"[{self.name}] RESP TO {client.getsockname()}: "
+                            f"{response_text}")
+            client.sendall(response_text.encode())
         return True

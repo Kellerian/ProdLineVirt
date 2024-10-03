@@ -12,7 +12,10 @@ def extract_barcode_value_from_template(msg_received: str) -> list[str]:
             dm_extracted = row.strip()
         elif 'DMATRIX' in row or "BARCODE " in row:
             params = row.split('"')
-            splitted = params[1]
+            if 'DMATRIX' in row:
+                splitted = params[1]
+            else:
+                splitted = params[-2]
             dm_extracted = splitted.replace('~d034', '"').strip()
         elif 'XRB' in row:
             r_n = msg_rows[r + 1]
