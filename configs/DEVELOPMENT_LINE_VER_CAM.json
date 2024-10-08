@@ -55,7 +55,7 @@
             "port": 25,
             "config": {
                 "packet_size": 1,
-                "interval": 150,
+                "interval": 50,
                 "gen_no_read": false,
                 "no_read_perc": 0,
                 "gen_duplicates": false,
@@ -69,7 +69,21 @@
             "port": 32,
             "config": {
                 "packet_size": 1,
-                "interval": 150,
+                "interval": 50,
+                "gen_no_read": false,
+                "no_read_perc": 0,
+                "gen_duplicates": false,
+                "duplicates_perc": 0,
+                "gen_grade": false,
+                "grade_perc": 0
+            }
+        },
+        {
+            "name": "CAM_26",
+            "port": 26,
+            "config": {
+                "packet_size": 1,
+                "interval": 50,
                 "gen_no_read": false,
                 "no_read_perc": 0,
                 "gen_duplicates": false,
@@ -98,7 +112,12 @@
         {
             "take_from": "VER_32",
             "give_to": "CAM_25",
-            "interval": 250
+            "interval": 310
+        },
+        {
+            "take_from": "VER_32",
+            "give_to": "CAM_26",
+            "interval": 330
         }
     ]
 }
