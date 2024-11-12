@@ -194,7 +194,7 @@ class PrinterEmul:
         if response_text == "CLEAR BUFFER":
             self.clear_buffer()
         else:
-            self._log.debug(f"[{self.name}] RESP TO {client.getsockname()}: "
-                            f"{response_text}")
+            # self._log.debug(f"[{self.name}] RESP TO {client.getsockname()}: "
+            #                 f"{response_text}")
             client.sendall(response_text.encode())
         return True

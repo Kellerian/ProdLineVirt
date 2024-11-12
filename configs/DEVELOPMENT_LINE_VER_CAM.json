@@ -107,7 +107,7 @@
         {
             "take_from": "PRN_9102",
             "give_to": "VER_32",
-            "interval": 150
+            "interval": 50
         },
         {
             "take_from": "VER_32",
