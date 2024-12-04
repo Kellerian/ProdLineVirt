@@ -8,6 +8,7 @@ from time import sleep
 from core.scanning.helpers import code_coord
 from libs.grades import BAD_CODES, GOOD_CODES
 from libs.loggers import CAMERA_LOGGER
+from libs.code_cleanup import get_clean_code
 from libs.sockets import get_server_socket
 
 
@@ -84,7 +85,7 @@ class CameraEmul:
                 processed_messages.append((p_message, is_ok, message))
             self._send_message([msg for msg, _, _ in processed_messages])
             self._sent.extend(
-                [p_message for p_message, is_ok, msg in
+                [get_clean_code(p_message) for p_message, is_ok, msg in
                  processed_messages if is_ok]
             )
 

@@ -1,14 +1,13 @@
 from logging import getLogger
-
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel, Qt
 from PySide6.QtWidgets import QComboBox, QWidget
-
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
 from core.transporting.data import TransporterConfig
 from forms.Transporter import Ui_Form
 from libs.loggers import UI_LOGGER
+from libs.code_cleanup import get_clean_code
 
 
 class TransporterWidget(QWidget, Ui_Form):
@@ -133,6 +132,8 @@ class TransporterWidget(QWidget, Ui_Form):
         if not self.model_in.rowCount():
             return
         row = self.model_in.takeRow(0)
+        for i, _r in enumerate(row.copy()):
+            row[i] = QStandardItem(get_clean_code(_r.text()))
         self.model_out.appendRow(row)
 
     def run(self, toggled: bool):

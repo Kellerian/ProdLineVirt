@@ -24,6 +24,6 @@ def code_coord(cells: int) -> Iterator[tuple[int, int]]:
     cols, rows = get_grid(cells)
     for h in range(cols):
         for w in range(rows):
-            x = (2 + 15) * w
-            y = (2 + 15) * h
+            x = (6 + 315) * w
+            y = (6 + 315) * h
             yield x, y
