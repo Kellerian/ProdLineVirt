@@ -70,6 +70,9 @@ class PrinterEmul:
             except BlockingIOError:
                 pass
             sleep(0.01)
+        for client in self._connections.copy():
+            client.close()
+            self._connections.remove(client)
 
     def _run_processing_thread(self):
         while self._can_run:
