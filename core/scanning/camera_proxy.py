@@ -44,6 +44,11 @@ class CameraProxy(QObject):
             return
         self._camera.set_duplicates(enabled, error_percent)
 
+    def set_coords_option(self, enabled: bool):
+        if self._camera is None:
+            return
+        self._camera.set_coords_option(enabled)
+
     def send_data(self, messages: list[str]):
         if self._camera is None:
             return

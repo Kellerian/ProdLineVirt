@@ -60,8 +60,7 @@ class Ui_Form(object):
 "\n"
 "QPushButton:pressed,\n"
 "QPushButton:checked,\n"
-"QToolButton:pressed,\n"
-"QToolButtont:checked {\n"
+"QToolButton:pressed, QToolButton:checked {\n"
 "	color: #f0b321;\n"
 "	background-color: #19466a;\n"
 "	border: 2px solid #f0b321;\n"
@@ -74,8 +73,8 @@ class Ui_Form(object):
 "	background-color: #226091;\n"
 "	border-radius: 3px;\n"
 "	selection-background-color:#19466a;\n"
-"	selection-"
-                        "color: #f0b321;\n"
+"	selection-color"
+                        ": #f0b321;\n"
 "	font: bold 10pt \"DejaVu Sans Mono\";\n"
 "}\n"
 "\n"
@@ -111,8 +110,8 @@ class Ui_Form(object):
 "    border-left-color: #17365D;\n"
 "    border-left-style: solid;\n"
 "    border-top-right-radius: 5px;\n"
-"    border-b"
-                        "ottom-right-radius: 5px;\n"
+"    border-bottom"
+                        "-right-radius: 5px;\n"
 "}\n"
 "\n"
 "QComboBox::down-arrow:on {\n"
@@ -164,9 +163,9 @@ class Ui_Form(object):
 "	width: 0px;\n"
 "}\n"
 "\n"
-"QScrollBar:add-lin"
-                        "e {\n"
-"	background:  none;\n"
+"QScrollBar:add-line {\n"
+""
+                        "	background:  none;\n"
 "	border: none;\n"
 "	height: 0px;	\n"
 "	padding: 0;\n"
@@ -203,8 +202,8 @@ class Ui_Form(object):
 "	font: bold 8pt \"DejaVu Sans Mono\"\n"
 "}\n"
 "\n"
-"QTabBar::ta"
-                        "b:!selected {\n"
+"QTabBar::tab:!selec"
+                        "ted {\n"
 "    margin-top: 1px;\n"
 "	font: 8pt \"DejaVu Sans Mono\"\n"
 "}")
@@ -346,10 +345,28 @@ class Ui_Form(object):
 
         self.verticalLayout_3.addLayout(self.horizontalLayout_6)
 
+        self.horizontalLayout_7 = QHBoxLayout()
+        self.horizontalLayout_7.setSpacing(1)
+        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
+        self.horizontalLayout_7.setContentsMargins(-1, 0, -1, 0)
         self.btnSendError = QPushButton(self.tabWidgetPage1)
         self.btnSendError.setObjectName(u"btnSendError")
 
-        self.verticalLayout_3.addWidget(self.btnSendError)
+        self.horizontalLayout_7.addWidget(self.btnSendError)
+
+        self.tbCoords = QToolButton(self.tabWidgetPage1)
+        self.tbCoords.setObjectName(u"tbCoords")
+        self.tbCoords.setMinimumSize(QSize(27, 27))
+        self.tbCoords.setMaximumSize(QSize(27, 27))
+        self.tbCoords.setCheckable(True)
+        self.tbCoords.setChecked(False)
+        self.tbCoords.setAutoExclusive(False)
+
+        self.horizontalLayout_7.addWidget(self.tbCoords)
+
+        self.horizontalLayout_7.setStretch(0, 1)
+
+        self.verticalLayout_3.addLayout(self.horizontalLayout_7)
 
         self.tabWidget.addTab(self.tabWidgetPage1, "")
         self.tabWidgetPage2 = QWidget()
@@ -542,6 +559,7 @@ class Ui_Form(object):
         self.label_4.setText(QCoreApplication.translate("Form", u"\u041f\u0415\u0420\u0415\u0414\u0410\u0412\u0410\u0422\u042c \u041a\u0410\u0416\u0414\u042b\u0415:", None))
         self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
         self.btnSendError.setText(QCoreApplication.translate("Form", u"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c error", None))
+        self.tbCoords.setText(QCoreApplication.translate("Form", u"y", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabWidgetPage1), QCoreApplication.translate("Form", u"\u041e\u0431\u043c\u0435\u043d", None))
         self.cbxNoRead.setText(QCoreApplication.translate("Form", u"NO READ", None))
         self.spNoReadPercent.setSuffix(QCoreApplication.translate("Form", u" %", None))

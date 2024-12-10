@@ -31,6 +31,7 @@ class CameraEmul:
         self._noread, self._noread_errs = False, 0
         self._grade, self._grade_errs = False, 0
         self._dups, self._dups_errs = False, 0
+        self._get_coords = False
 
     def set_noread(self, enabled: bool, error_percent: int = 0):
         self._noread, self._noread_errs = enabled, error_percent
@@ -40,6 +41,9 @@ class CameraEmul:
 
     def set_duplicates(self, enabled: bool, error_percent: int = 0):
         self._dups, self._dups_errs = enabled, error_percent
+
+    def set_coords_option(self, enabled: bool):
+        self._get_coords = enabled
 
     def start(self):
         self._can_run = True
@@ -106,7 +110,8 @@ class CameraEmul:
                 if message[-2] == '@':
                     message = message[:-2]
                 message += f'@{choice(GOOD_CODES)}'
-        message += f"({coords[0]},{coords[1]})"
+        if self._get_coords:
+            message += f"({coords[0]},{coords[1]})"
         if self._dups and is_error(self._dups_errs):
             message = "\n\r".join([message, message])
         return message, is_good

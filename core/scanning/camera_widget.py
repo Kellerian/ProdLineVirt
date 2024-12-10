@@ -62,6 +62,7 @@ class CameraWidget(QWidget, Ui_Form):
         self.lstProcessed.doubleClicked.connect(self.create_image)
 
         self.btnSendError.clicked.connect(self._send_error)
+        self.tbCoords.toggled.connect(self.set_coords_option)
 
     def _send_error(self):
         self.model_in.appendRow(QStandardItem('error'))
@@ -92,6 +93,9 @@ class CameraWidget(QWidget, Ui_Form):
         self._camera.set_duplicates(
             self.cbxDups.isChecked(), self.spDupsPercent.value()
         )
+
+    def set_coords_option(self, toogled: bool):
+        self._camera.set_coords_option(toogled)
 
     def _setup_icon(self, toggled: bool):
         if toggled:

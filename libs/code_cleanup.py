@@ -1,7 +1,7 @@
 from re import sub
 
 
-CLEANUP_RE = r'(@.)|(\(\d,\d\))'
+CLEANUP_RE = r'(@.)|(\(\d+,\d+\))'
 
 
 def get_clean_code(code: str) -> str:

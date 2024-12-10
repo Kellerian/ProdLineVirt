@@ -63,7 +63,7 @@ QListView {
 }
 
 QToolButton:pressed,
-QToolButtont:checked {
+QToolButton:checked {
 	color: #f0b321;
 	background-color: #19466a;
 	border: 2px solid #f0b321;

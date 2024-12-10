@@ -59,8 +59,7 @@ QListView {
 
 QPushButton:pressed,
 QPushButton:checked,
-QToolButton:pressed,
-QToolButtont:checked {
+QToolButton:pressed, QToolButton:checked {
 	color: #f0b321;
 	background-color: #19466a;
 	border: 2px solid #f0b321;
@@ -518,11 +517,52 @@ QTabBar::tab:!selected {
         </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="btnSendError">
-         <property name="text">
-          <string>Отправить error</string>
+        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="1,0">
+         <property name="spacing">
+          <number>1</number>
          </property>
-        </widget>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QPushButton" name="btnSendError">
+           <property name="text">
+            <string>Отправить error</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="tbCoords">
+           <property name="minimumSize">
+            <size>
+             <width>27</width>
+             <height>27</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>27</width>
+             <height>27</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>y</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+           <property name="autoExclusive">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
