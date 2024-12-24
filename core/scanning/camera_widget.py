@@ -94,8 +94,8 @@ class CameraWidget(QWidget, Ui_Form):
             self.cbxDups.isChecked(), self.spDupsPercent.value()
         )
 
-    def set_coords_option(self, toogled: bool):
-        self._camera.set_coords_option(toogled)
+    def set_coords_option(self):
+        self._camera.set_coords_option(self.tbCoords.isChecked())
 
     def _setup_icon(self, toggled: bool):
         if toggled:
@@ -134,6 +134,7 @@ class CameraWidget(QWidget, Ui_Form):
         self.set_no_read_settings()
         self.set_dups_settings()
         self.set_grade_settings()
+        self.set_coords_option()
 
     def load_options(self, params: CameraParams):
         self.spSize.setValue(params.packet_size)

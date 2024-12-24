@@ -132,12 +132,12 @@ class PrinterEmul:
         #     '\x20' if self._print_buffer else '\x00',
         #     f"0,0,0,0,{current_buffer_size}"
         # ]
-        if msg_received == f"{chr(27)}!?":
+        if f"{chr(27)}!?" in msg_received:
             response_text = '\x20' if self._print_buffer else '\x00'
             # response_text = TEST_RESPONSE[random.randint(0, 1)]
-        elif msg_received == f"{chr(27)}!.":
+        elif f"{chr(27)}!." in msg_received:
             response_text = "CLEAR BUFFER"
-        elif msg_received == f"~!F":
+        elif "~!F" in msg_received:
             if self._files_list:
                 response_text = "\r".join(self._files_list)
             else:
@@ -145,21 +145,21 @@ class PrinterEmul:
         elif "DOWNLOAD F" in msg_received:
             parts = msg_received.split(",")
             self._files_list.append(parts[1])
-        elif msg_received == "~S,CHECK":
+        elif "~S,CHECK" in msg_received:
             response_text = '00'
-        elif msg_received == "~S,STATUS":
+        elif "~S,STATUS" in msg_received:
             response_text = f'00,{current_buffer_size:05d}'
-        elif msg_received == "OUT @LABEL":
+        elif "OUT @LABEL" in msg_received:
             response_text = f"{self._printed}"
-        elif msg_received == "~HS":
+        elif "~HS" in msg_received:
             response_text = f"0,0,0,0,{current_buffer_size}"
             # response_text = TEST_RESPONSE[random.randint(0, 1)]
-        elif msg_received == "~S,LABEL":
+        elif "~S,LABEL" in msg_received:
             response_text = f"{current_buffer_size}"
         # Эмуляция чеквейра
-        elif msg_received == "START":
+        elif "START" in msg_received:
             response_text = "START ON"
-        elif msg_received == "STOP":
+        elif "STOP" in msg_received:
             client.sendall("STOP CMD".encode())
             client.sendall("STOP LINE".encode())
             return True
@@ -174,22 +174,22 @@ class PrinterEmul:
                 response_text = f"ORDER SELECT={order_id}"
             else:
                 response_text = f"Отсутствуют коды в БД для заказа {order_id}"
-        elif msg_received == "STATE":
+        elif "STATE" in msg_received:
             response_text = "STATE 0x248A = RUNNING"
-        elif msg_received == "STATE=1":
+        elif "STATE=1" in msg_received:
             response_text = "STATE 0x248A = RUNNING"
-        elif msg_received == "BOXCLOSE":
+        elif "BOXCLOSE" in msg_received:
             response_text = "OK"
-        elif msg_received == "SPLIT":
+        elif "SPLIT" in msg_received:
             response_text = "OK"
-        elif msg_received == "~S,BUFCLR":
+        elif "~S,BUFCLR" in msg_received:
             response_text = "CLEAR BUFFER"
         elif msg_received in (
             'OUT GETSETTING$("CONFIG", "NET", "MAC ADDRESS")',
             '^NMACADDR'
         ):
             response_text = self._mac
-        elif msg_received == "~S,FEED":
+        elif "~S,FEED" in msg_received:
             return True
         else:
             return False
