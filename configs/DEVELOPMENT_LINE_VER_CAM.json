@@ -97,17 +97,17 @@
         {
             "take_from": "PRN_9101",
             "give_to": "CAM_23",
-            "interval": 50
+            "interval": 35
         },
         {
             "take_from": "CAM_23",
             "give_to": "CAM_24",
-            "interval": 50
+            "interval": 35
         },
         {
             "take_from": "PRN_9102",
             "give_to": "VER_32",
-            "interval": 50
+            "interval": 35
         },
         {
             "take_from": "VER_32",

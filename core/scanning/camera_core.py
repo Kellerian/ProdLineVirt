@@ -66,6 +66,7 @@ class CameraEmul:
                 self._log.info(f"[{self.name}] NEW CLIENT from {address}"
                                f" {connected_client}")
             except BlockingIOError:
+                sleep(0.01)
                 pass
         for client in self._connections.copy():
             client.close()

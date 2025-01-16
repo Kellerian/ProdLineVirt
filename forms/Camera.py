@@ -24,7 +24,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(260, 250)
+        Form.resize(260, 342)
         Form.setMinimumSize(QSize(260, 250))
         Form.setMaximumSize(QSize(260, 16777215))
         Form.setStyleSheet(u"QToolButton, QPushButton {\n"
@@ -356,8 +356,14 @@ class Ui_Form(object):
 
         self.tbCoords = QToolButton(self.tabWidgetPage1)
         self.tbCoords.setObjectName(u"tbCoords")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.tbCoords.sizePolicy().hasHeightForWidth())
+        self.tbCoords.setSizePolicy(sizePolicy1)
         self.tbCoords.setMinimumSize(QSize(27, 27))
-        self.tbCoords.setMaximumSize(QSize(27, 27))
+        self.tbCoords.setMaximumSize(QSize(58, 27))
+        self.tbCoords.setFont(font1)
         self.tbCoords.setCheckable(True)
         self.tbCoords.setChecked(False)
         self.tbCoords.setAutoExclusive(False)
@@ -559,7 +565,7 @@ class Ui_Form(object):
         self.label_4.setText(QCoreApplication.translate("Form", u"\u041f\u0415\u0420\u0415\u0414\u0410\u0412\u0410\u0422\u042c \u041a\u0410\u0416\u0414\u042b\u0415:", None))
         self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
         self.btnSendError.setText(QCoreApplication.translate("Form", u"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c error", None))
-        self.tbCoords.setText(QCoreApplication.translate("Form", u"y", None))
+        self.tbCoords.setText(QCoreApplication.translate("Form", u"(x,y)", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabWidgetPage1), QCoreApplication.translate("Form", u"\u041e\u0431\u043c\u0435\u043d", None))
         self.cbxNoRead.setText(QCoreApplication.translate("Form", u"NO READ", None))
         self.spNoReadPercent.setSuffix(QCoreApplication.translate("Form", u" %", None))

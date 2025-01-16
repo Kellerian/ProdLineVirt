@@ -68,8 +68,8 @@ class PrinterEmul:
                 self._log.info(f"[{self.name}] NEW CLIENT from {address}"
                                f" {connected_client}")
             except BlockingIOError:
+                sleep(0.01)
                 pass
-            sleep(0.01)
         for client in self._connections.copy():
             client.close()
             self._connections.remove(client)

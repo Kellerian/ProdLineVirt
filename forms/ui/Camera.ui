@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>260</width>
-    <height>250</height>
+    <height>342</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -536,6 +536,12 @@ QTabBar::tab:!selected {
          </item>
          <item>
           <widget class="QToolButton" name="tbCoords">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>27</width>
@@ -544,12 +550,20 @@ QTabBar::tab:!selected {
            </property>
            <property name="maximumSize">
             <size>
-             <width>27</width>
+             <width>58</width>
              <height>27</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <family>DejaVu Sans Mono</family>
+             <pointsize>12</pointsize>
+             <italic>false</italic>
+             <bold>true</bold>
+            </font>
+           </property>
            <property name="text">
-            <string>y</string>
+            <string>(x,y)</string>
            </property>
            <property name="checkable">
             <bool>true</bool>
