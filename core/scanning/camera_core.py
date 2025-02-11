@@ -121,7 +121,7 @@ class CameraEmul:
         message = "\n\r".join(messages)
         for client in self._connections.copy():
             try:
-                client.send(bytes(f"{message}\n\r", 'utf-8'))
+                client.sendall(bytes(f"{message}\n\r", 'utf-8'))
                 self._log.info(f"[{self.name}] SENT: {message}")
             except ConnectionAbortedError as e:
                 self._log.warning(f"[{self.name}] {client} "

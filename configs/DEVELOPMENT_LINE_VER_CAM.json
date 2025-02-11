@@ -27,7 +27,7 @@
             "port": 23,
             "config": {
                 "packet_size": 1,
-                "interval": 50,
+                "interval": 35,
                 "gen_no_read": false,
                 "no_read_perc": 0,
                 "gen_duplicates": false,
