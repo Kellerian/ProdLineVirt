@@ -91,6 +91,20 @@
                 "gen_grade": false,
                 "grade_perc": 0
             }
+        },
+        {
+            "name": "VER_33",
+            "port": 33,
+            "config": {
+                "packet_size": 1,
+                "interval": 50,
+                "gen_no_read": false,
+                "no_read_perc": 0,
+                "gen_duplicates": false,
+                "duplicates_perc": 0,
+                "gen_grade": false,
+                "grade_perc": 0
+            }
         }
     ],
     "transporters": [
