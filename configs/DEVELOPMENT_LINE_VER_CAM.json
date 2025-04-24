@@ -19,6 +19,11 @@
             "name": "PRN_9104",
             "port": 9104,
             "buffer": 1
+        },
+        {
+            "name": "PRN_9105",
+            "port": 9105,
+            "buffer": 1
         }
     ],
     "cameras": [
@@ -121,7 +126,7 @@
         {
             "take_from": "PRN_9102",
             "give_to": "VER_32",
-            "interval": 35
+            "interval": 1100
         },
         {
             "take_from": "VER_32",
@@ -129,9 +134,14 @@
             "interval": 310
         },
         {
-            "take_from": "VER_32",
-            "give_to": "CAM_26",
+            "take_from": "CAM_25",
+            "give_to": "VER_32",
             "interval": 330
+        },
+        {
+            "take_from": "PRN_9105",
+            "give_to": "CAM_26",
+            "interval": 15
         }
     ]
 }
