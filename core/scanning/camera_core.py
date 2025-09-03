@@ -84,23 +84,21 @@ class CameraEmul:
             grid_gen = code_coord(len(self._to_send))
             while self._to_send:
                 message = self._to_send.popleft()
-                p_message, is_ok = self._process_message(
-                    message, next(grid_gen)
-                )
-                processed_messages.append((p_message, is_ok, message))
-            self._send_message([msg for msg, _, _ in processed_messages])
-            self._sent.extend(
-                [get_clean_code(p_message) for p_message, is_ok, msg in
-                 processed_messages if is_ok]
-            )
+                results = self._process_message(message, next(grid_gen))
+                for p_message, is_ok in results:
+                    processed_messages.append((p_message, is_ok, message))
+            for p_message, is_ok, msg in processed_messages:
+                self._send_message(p_message)
+                if is_ok:
+                    self._sent.append(get_clean_code(p_message))
 
     def _process_message(
         self, message: str, coords: tuple[int, int]
-    ) -> tuple[str, bool]:
+    ) -> list[tuple[str, bool]]:
         is_good = True
         if self._noread and is_error(self._noread_errs):
             message = 'error'
-            return message, False
+            return [(message, False)]
         if self._grade:
             if is_error(self._grade_errs):
                 if message[-2] == '@':
@@ -114,11 +112,10 @@ class CameraEmul:
         if self._get_coords:
             message += f"({coords[0]},{coords[1]})"
         if self._dups and is_error(self._dups_errs):
-            message = "\n\r".join([message, message])
-        return message, is_good
+            return [(message, is_good), (message, is_good)]
+        return [(message, is_good)]
 
-    def _send_message(self, messages: list[str]):
-        message = "\n\r".join(messages)
+    def _send_message(self, message: str):
         for client in self._connections.copy():
             try:
                 client.sendall(bytes(f"{message}\n\r", 'utf-8'))
