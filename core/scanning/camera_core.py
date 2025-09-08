@@ -87,10 +87,11 @@ class CameraEmul:
                 results = self._process_message(message, next(grid_gen))
                 for p_message, is_ok in results:
                     processed_messages.append((p_message, is_ok, message))
-            for p_message, is_ok, msg in processed_messages:
-                self._send_message(p_message)
-                if is_ok:
-                    self._sent.append(get_clean_code(p_message))
+            self._send_message([msg for msg, _, _ in processed_messages])
+            self._sent.extend(
+                [get_clean_code(p_message) for p_message, is_ok, msg in
+                 processed_messages if is_ok]
+            )
 
     def _process_message(
         self, message: str, coords: tuple[int, int]
@@ -115,7 +116,8 @@ class CameraEmul:
             return [(message, is_good), (message, is_good)]
         return [(message, is_good)]
 
-    def _send_message(self, message: str):
+    def _send_message(self, messages: list[str]):
+        message = "\n\r".join(messages)
         for client in self._connections.copy():
             try:
                 client.sendall(bytes(f"{message}\n\r", 'utf-8'))
