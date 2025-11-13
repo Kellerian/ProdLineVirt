@@ -45,7 +45,7 @@
             "name": "CAM_24",
             "port": 24,
             "config": {
-                "packet_size": 24,
+                "packet_size": 1,
                 "interval": 50,
                 "gen_no_read": false,
                 "no_read_perc": 0,
@@ -142,6 +142,13 @@
             "take_from": "PRN_9102",
             "give_to": "CAM_26",
             "interval": 15
+        }
+    ],
+    "generators": [
+        {
+            "generator_type": "UKZ",
+            "give_to": "CAM_23",
+            "interval": 250
         }
     ]
 }

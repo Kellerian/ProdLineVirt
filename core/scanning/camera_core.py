@@ -121,7 +121,7 @@ class CameraEmul:
         for client in self._connections.copy():
             try:
                 client.sendall(bytes(f"{message}\n\r", 'utf-8'))
-                self._log.info(f"[{self.name}] SENT: {message}")
+                self._log.info(f"[{self.name}] SENT: {message} TO {client}")
             except ConnectionAbortedError as e:
                 self._log.warning(f"[{self.name}] {client} "
                                   f"потеряно соединение: {e}")

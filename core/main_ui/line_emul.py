@@ -126,6 +126,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             ],
             transporters=[
                 dev.options() for dev in self._transporter_widgets.values()
+            ],
+            generators=[
+                dev.options() for dev in self._generator_widgets.values()
             ]
         )
         json_data = current_config.model_dump_json(indent=4)
@@ -167,7 +170,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             if to_id is None:
                 continue
             gen_w = self.add_generator()
-            gen_w.set_to_model(to_id)
+            gen_w.set_to_ids(to_id)
             gen_w.set_generator_type(gen.generator_type)
             gen_w.set_interval(gen.interval)
 
@@ -176,6 +179,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._load_printers(config.printers, devices)
         self._load_cameras(config.cameras, devices)
         self._load_transporters(config.transporters, devices)
+        self._load_generator(config.generators, devices)
 
     def clear_ui(self):
         for key in self._device_widgets.copy():
