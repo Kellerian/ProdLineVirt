@@ -24,7 +24,7 @@ class Ui_Form(object):
         if not Form.objectName():
             Form.setObjectName(u"Form")
         Form.resize(280, 100)
-        Form.setMinimumSize(QSize(280, 100))
+        Form.setMinimumSize(QSize(200, 100))
         Form.setMaximumSize(QSize(280, 100))
         Form.setStyleSheet(u"QToolButton {\n"
 "    qproperty-alignment: AlignCenter;\n"
@@ -167,11 +167,16 @@ class Ui_Form(object):
 "	padding: 0;\n"
 "	w"
                         "idth: 0px;\n"
+"}\n"
+"\n"
+"QWidget#Form {\n"
+"	border: 1px solid #17365D;\n"
+"	border-radius: 3px;\n"
 "}")
         self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setSpacing(1)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setContentsMargins(1, 1, 1, 1)
+        self.verticalLayout.setContentsMargins(2, 2, 2, 2)
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setSpacing(1)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")

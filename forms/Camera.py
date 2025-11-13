@@ -24,8 +24,8 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(260, 342)
-        Form.setMinimumSize(QSize(260, 250))
+        Form.resize(200, 342)
+        Form.setMinimumSize(QSize(200, 250))
         Form.setMaximumSize(QSize(260, 16777215))
         Form.setStyleSheet(u"QToolButton, QPushButton {\n"
 "    qproperty-alignment: AlignCenter;\n"
@@ -206,11 +206,15 @@ class Ui_Form(object):
                         "ted {\n"
 "    margin-top: 1px;\n"
 "	font: 8pt \"DejaVu Sans Mono\"\n"
+"}\n"
+"QWidget#Form {\n"
+"	border: 1px solid #17365D;\n"
+"	border-radius: 3px;\n"
 "}")
         self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setSpacing(1)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setContentsMargins(1, 1, 1, 1)
+        self.verticalLayout.setContentsMargins(2, 2, 2, 2)
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setSpacing(1)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
@@ -548,7 +552,7 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         self.tabWidget_2.setCurrentIndex(0)
 
 
@@ -557,14 +561,14 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Camera", None))
-        self.leName.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
-        self.leConnetionStr.setPlaceholderText(QCoreApplication.translate("Form", u"\u041f\u043e\u0440\u0442 \u043f\u0440\u043e\u0441\u043b\u0443\u0448\u0438\u0432\u0430\u043d\u0438\u044f (9100, \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440)", None))
+        self.leName.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435", None))
+        self.leConnetionStr.setPlaceholderText(QCoreApplication.translate("Form", u"\u041f\u043e\u0440\u0442", None))
         self.tbRun.setText(QCoreApplication.translate("Form", u"R", None))
-        self.label.setText(QCoreApplication.translate("Form", u"\u041e\u0422\u041f\u0420\u0410\u0412\u041b\u042f\u0422\u042c \u0417\u0410 \u0420\u0410\u0417:", None))
+        self.label.setText(QCoreApplication.translate("Form", u"\u041f\u0410\u041a\u0415\u0422", None))
         self.spSize.setSuffix(QCoreApplication.translate("Form", u" \u043a\u043c", None))
-        self.label_4.setText(QCoreApplication.translate("Form", u"\u041f\u0415\u0420\u0415\u0414\u0410\u0412\u0410\u0422\u042c \u041a\u0410\u0416\u0414\u042b\u0415:", None))
+        self.label_4.setText(QCoreApplication.translate("Form", u"\u0418\u041d\u0422\u0415\u0420\u0412\u0410\u041b", None))
         self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
-        self.btnSendError.setText(QCoreApplication.translate("Form", u"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c error", None))
+        self.btnSendError.setText(QCoreApplication.translate("Form", u"error", None))
         self.tbCoords.setText(QCoreApplication.translate("Form", u"(x,y)", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabWidgetPage1), QCoreApplication.translate("Form", u"\u041e\u0431\u043c\u0435\u043d", None))
         self.cbxNoRead.setText(QCoreApplication.translate("Form", u"NO READ", None))

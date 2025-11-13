@@ -1,6 +1,9 @@
 from pathlib import Path
 from typing import Iterator
 from PySide6.QtWidgets import QFileDialog, QMainWindow
+
+from core.generator.data import GeneratorConfig
+from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.data import ConfigFile
 from core.main_ui.flow_layout import FlowLayout
 from core.printing.data import PrinterConfig
@@ -21,6 +24,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.setWindowIcon(get_icon())
         self._device_widgets: dict[int, CameraWidget | PrinterWidget] = {}
         self._transporter_widgets: dict[int, TransporterWidget] = {}
+        self._generator_widgets: dict[int, GeneratorWidget] = {}
         self.cam_port = self.cam_port_generator()
         self.printer_port = self.printer_port_generator()
         self._devices_layout = FlowLayout(self.scaDevices)
@@ -52,6 +56,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.acAddPrinter.triggered.connect(self._ac_add_printer)
         self.acAddCamera.triggered.connect(self._ac_add_camera)
         self.acAddTransporter.triggered.connect(self.add_transporter)
+        self.acAddGenerator.triggered.connect(self.add_generator)
         self.acOpen.triggered.connect(self.open_config)
         self.acSave.triggered.connect(self.save_config)
         self.acSaveAs.triggered.connect(self.save_config_as)
@@ -84,6 +89,12 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         transport.setup_models(self._device_widgets)
         self._add_transport(transport)
         return transport
+
+    def add_generator(self) -> GeneratorWidget:
+        generator = GeneratorWidget()
+        generator.setup_models(self._device_widgets)
+        self._add_generator(generator)
+        return generator
 
     def save_config(self):
         if self._active_file is None:
@@ -148,6 +159,18 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             trn_w.set_source_ids(from_id, to_id)
             trn_w.set_interval(trn.interval)
 
+    def _load_generator(
+        self, generators: list[GeneratorConfig], devices: dict[str, int]
+    ):
+        for gen in generators:
+            to_id = devices.get(gen.give_to)
+            if to_id is None:
+                continue
+            gen_w = self.add_generator()
+            gen_w.set_to_model(to_id)
+            gen_w.set_generator_type(gen.generator_type)
+            gen_w.set_interval(gen.interval)
+
     def process_config(self, config: ConfigFile):
         devices: dict[str, int] = {}
         self._load_printers(config.printers, devices)
@@ -186,6 +209,10 @@ class MainLineField(QMainWindow, Ui_MainWindow):
     def _add_transport(self, transport: TransporterWidget):
         self._transporter_widgets[id(transport)] = transport
         self.transporters_layout.addWidget(transport)
+
+    def _add_generator(self, generator: GeneratorWidget):
+        self._generator_widgets[id(generator)] = generator
+        self.transporters_layout.addWidget(generator)
 
     def _add_device(self, device: CameraWidget | PrinterWidget):
         self._device_widgets[id(device)] = device

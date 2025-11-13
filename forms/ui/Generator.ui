@@ -6,30 +6,24 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>260</width>
-    <height>250</height>
+    <width>238</width>
+    <height>100</height>
    </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
     <width>200</width>
-    <height>250</height>
+    <height>100</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>260</width>
-    <height>16777215</height>
+    <width>280</width>
+    <height>100</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>Printer</string>
+   <string>Form</string>
   </property>
   <property name="styleSheet">
    <string notr="true">QToolButton {
@@ -177,7 +171,7 @@ QWidget#Form {
 	border-radius: 3px;
 }</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,1">
    <property name="spacing">
     <number>1</number>
    </property>
@@ -194,52 +188,68 @@ QWidget#Form {
     <number>2</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,1,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,1,0">
      <property name="spacing">
       <number>1</number>
      </property>
      <item>
-      <widget class="QLineEdit" name="leName">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QLabel" name="label_4">
        <property name="font">
         <font>
          <family>DejaVu Sans Mono</family>
          <pointsize>10</pointsize>
          <italic>false</italic>
-         <bold>false</bold>
+         <bold>true</bold>
         </font>
        </property>
-       <property name="maxLength">
-        <number>25</number>
-       </property>
-       <property name="placeholderText">
-        <string>Название устройства</string>
+       <property name="text">
+        <string>КОД КАЖДЫЕ:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="leConnetionStr">
+      <widget class="QSpinBox" name="spInterval">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="font">
-        <font>
-         <family>DejaVu Sans Mono</family>
-         <pointsize>10</pointsize>
-         <italic>false</italic>
-         <bold>false</bold>
-        </font>
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
        </property>
-       <property name="placeholderText">
-        <string>Порт прослушивания (9100, например)</string>
+       <property name="wrapping">
+        <bool>false</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="readOnly">
+        <bool>false</bool>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::UpDownArrows</enum>
+       </property>
+       <property name="correctionMode">
+        <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+       </property>
+       <property name="showGroupSeparator" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="suffix">
+        <string> мс</string>
+       </property>
+       <property name="minimum">
+        <number>10</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+       <property name="value">
+        <number>250</number>
        </property>
       </widget>
      </item>
@@ -285,12 +295,12 @@ QWidget#Form {
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
      <property name="spacing">
-      <number>0</number>
+      <number>1</number>
      </property>
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="label_5">
        <property name="font">
         <font>
          <family>DejaVu Sans Mono</family>
@@ -300,87 +310,52 @@ QWidget#Form {
         </font>
        </property>
        <property name="text">
-        <string>Буфер:</string>
-       </property>
-       <property name="indent">
-        <number>5</number>
+        <string> Ф:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="spAmount">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+      <widget class="QComboBox" name="cbxCodeType">
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::AdjustToContents</enum>
        </property>
-       <property name="minimumSize">
-        <size>
-         <width>100</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="wrapping">
-        <bool>false</bool>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-       <property name="readOnly">
-        <bool>false</bool>
-       </property>
-       <property name="buttonSymbols">
-        <enum>QAbstractSpinBox::UpDownArrows</enum>
-       </property>
-       <property name="correctionMode">
-        <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
-       </property>
-       <property name="showGroupSeparator" stdset="0">
-        <bool>true</bool>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>100</number>
-       </property>
-       <property name="value">
-        <number>1</number>
-       </property>
+       <item>
+        <property name="text">
+         <string>УКЗ</string>
+        </property>
+       </item>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QListView" name="lstData">
-     <property name="font">
-      <font>
-       <family>DejaVu Sans Mono</family>
-       <pointsize>8</pointsize>
-       <italic>false</italic>
-       <bold>false</bold>
-      </font>
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1">
+     <property name="spacing">
+      <number>1</number>
      </property>
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
-     </property>
-     <property name="dragDropMode">
-      <enum>QAbstractItemView::DragOnly</enum>
-     </property>
-     <property name="defaultDropAction">
-      <enum>Qt::MoveAction</enum>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::ExtendedSelection</enum>
-     </property>
-     <property name="selectionRectVisible">
-      <bool>true</bool>
-     </property>
-    </widget>
+     <item>
+      <widget class="QLabel" name="label_6">
+       <property name="font">
+        <font>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>10</pointsize>
+         <italic>false</italic>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string> В:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="cbxTo">
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::AdjustToContents</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

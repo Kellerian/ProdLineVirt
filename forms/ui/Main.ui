@@ -47,7 +47,7 @@ QScrollBar:add-line {
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
     <property name="spacing">
      <number>1</number>
     </property>
@@ -183,6 +183,8 @@ QScrollBar:add-line {
     <addaction name="acAddPrinter"/>
     <addaction name="separator"/>
     <addaction name="acAddTransporter"/>
+    <addaction name="separator"/>
+    <addaction name="acAddGenerator"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -230,6 +232,11 @@ QScrollBar:add-line {
   <action name="acClose">
    <property name="text">
     <string>Закрыть</string>
+   </property>
+  </action>
+  <action name="acAddGenerator">
+   <property name="text">
+    <string>Генератор</string>
    </property>
   </action>
  </widget>

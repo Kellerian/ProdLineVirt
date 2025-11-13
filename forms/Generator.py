@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'Printer.ui'
+## Form generated from reading UI file 'Generator.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.7.1
 ##
@@ -15,22 +15,17 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QHBoxLayout,
-    QLabel, QLineEdit, QListView, QSizePolicy,
-    QSpinBox, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QComboBox, QHBoxLayout,
+    QLabel, QSizePolicy, QSpinBox, QToolButton,
+    QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(260, 250)
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(Form.sizePolicy().hasHeightForWidth())
-        Form.setSizePolicy(sizePolicy)
-        Form.setMinimumSize(QSize(200, 250))
-        Form.setMaximumSize(QSize(260, 16777215))
+        Form.resize(238, 100)
+        Form.setMinimumSize(QSize(200, 100))
+        Form.setMaximumSize(QSize(280, 100))
         Form.setStyleSheet(u"QToolButton {\n"
 "    qproperty-alignment: AlignCenter;\n"
 "	border: 1px solid #FF17365D;\n"
@@ -182,36 +177,39 @@ class Ui_Form(object):
         self.verticalLayout.setSpacing(1)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(2, 2, 2, 2)
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setSpacing(1)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.leName = QLineEdit(Form)
-        self.leName.setObjectName(u"leName")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.leName.sizePolicy().hasHeightForWidth())
-        self.leName.setSizePolicy(sizePolicy1)
+        self.horizontalLayout_6 = QHBoxLayout()
+        self.horizontalLayout_6.setSpacing(1)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.label_4 = QLabel(Form)
+        self.label_4.setObjectName(u"label_4")
         font = QFont()
         font.setFamilies([u"DejaVu Sans Mono"])
         font.setPointSize(10)
-        font.setBold(False)
+        font.setBold(True)
         font.setItalic(False)
-        self.leName.setFont(font)
-        self.leName.setMaxLength(25)
+        self.label_4.setFont(font)
 
-        self.horizontalLayout.addWidget(self.leName)
+        self.horizontalLayout_6.addWidget(self.label_4)
 
-        self.leConnetionStr = QLineEdit(Form)
-        self.leConnetionStr.setObjectName(u"leConnetionStr")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.leConnetionStr.sizePolicy().hasHeightForWidth())
-        self.leConnetionStr.setSizePolicy(sizePolicy2)
-        self.leConnetionStr.setFont(font)
+        self.spInterval = QSpinBox(Form)
+        self.spInterval.setObjectName(u"spInterval")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.spInterval.sizePolicy().hasHeightForWidth())
+        self.spInterval.setSizePolicy(sizePolicy)
+        self.spInterval.setMinimumSize(QSize(100, 0))
+        self.spInterval.setWrapping(False)
+        self.spInterval.setAlignment(Qt.AlignCenter)
+        self.spInterval.setReadOnly(False)
+        self.spInterval.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
+        self.spInterval.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
+        self.spInterval.setProperty("showGroupSeparator", True)
+        self.spInterval.setMinimum(10)
+        self.spInterval.setMaximum(999999)
+        self.spInterval.setValue(250)
 
-        self.horizontalLayout.addWidget(self.leConnetionStr)
+        self.horizontalLayout_6.addWidget(self.spInterval)
 
         self.tbRun = QToolButton(Form)
         self.tbRun.setObjectName(u"tbRun")
@@ -227,66 +225,54 @@ class Ui_Form(object):
         self.tbRun.setCheckable(True)
         self.tbRun.setChecked(False)
 
-        self.horizontalLayout.addWidget(self.tbRun)
+        self.horizontalLayout_6.addWidget(self.tbRun)
 
-        self.horizontalLayout.setStretch(0, 4)
+        self.horizontalLayout_6.setStretch(0, 1)
+        self.horizontalLayout_6.setStretch(1, 1)
+
+        self.verticalLayout.addLayout(self.horizontalLayout_6)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setSpacing(1)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.label_5 = QLabel(Form)
+        self.label_5.setObjectName(u"label_5")
+        self.label_5.setFont(font)
+
+        self.horizontalLayout.addWidget(self.label_5)
+
+        self.cbxCodeType = QComboBox(Form)
+        self.cbxCodeType.addItem("")
+        self.cbxCodeType.setObjectName(u"cbxCodeType")
+        self.cbxCodeType.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+
+        self.horizontalLayout.addWidget(self.cbxCodeType)
+
         self.horizontalLayout.setStretch(1, 1)
 
         self.verticalLayout.addLayout(self.horizontalLayout)
 
         self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setSpacing(0)
+        self.horizontalLayout_2.setSpacing(1)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.label = QLabel(Form)
-        self.label.setObjectName(u"label")
-        font2 = QFont()
-        font2.setFamilies([u"DejaVu Sans Mono"])
-        font2.setPointSize(10)
-        font2.setBold(True)
-        font2.setItalic(False)
-        self.label.setFont(font2)
-        self.label.setIndent(5)
+        self.label_6 = QLabel(Form)
+        self.label_6.setObjectName(u"label_6")
+        self.label_6.setFont(font)
 
-        self.horizontalLayout_2.addWidget(self.label)
+        self.horizontalLayout_2.addWidget(self.label_6)
 
-        self.spAmount = QSpinBox(Form)
-        self.spAmount.setObjectName(u"spAmount")
-        sizePolicy2.setHeightForWidth(self.spAmount.sizePolicy().hasHeightForWidth())
-        self.spAmount.setSizePolicy(sizePolicy2)
-        self.spAmount.setMinimumSize(QSize(100, 0))
-        self.spAmount.setWrapping(False)
-        self.spAmount.setAlignment(Qt.AlignCenter)
-        self.spAmount.setReadOnly(False)
-        self.spAmount.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
-        self.spAmount.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spAmount.setProperty("showGroupSeparator", True)
-        self.spAmount.setMinimum(1)
-        self.spAmount.setMaximum(100)
-        self.spAmount.setValue(1)
+        self.cbxTo = QComboBox(Form)
+        self.cbxTo.setObjectName(u"cbxTo")
+        self.cbxTo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
 
-        self.horizontalLayout_2.addWidget(self.spAmount)
+        self.horizontalLayout_2.addWidget(self.cbxTo)
 
-        self.horizontalLayout_2.setStretch(0, 1)
+        self.horizontalLayout_2.setStretch(1, 1)
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
-        self.lstData = QListView(Form)
-        self.lstData.setObjectName(u"lstData")
-        font3 = QFont()
-        font3.setFamilies([u"DejaVu Sans Mono"])
-        font3.setPointSize(8)
-        font3.setBold(False)
-        font3.setItalic(False)
-        self.lstData.setFont(font3)
-        self.lstData.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.lstData.setDragDropMode(QAbstractItemView.DragOnly)
-        self.lstData.setDefaultDropAction(Qt.MoveAction)
-        self.lstData.setAlternatingRowColors(True)
-        self.lstData.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.lstData.setSelectionRectVisible(True)
-
-        self.verticalLayout.addWidget(self.lstData)
-
+        self.verticalLayout.setStretch(0, 1)
+        self.verticalLayout.setStretch(1, 1)
         self.verticalLayout.setStretch(2, 1)
 
         self.retranslateUi(Form)
@@ -295,10 +281,13 @@ class Ui_Form(object):
     # setupUi
 
     def retranslateUi(self, Form):
-        Form.setWindowTitle(QCoreApplication.translate("Form", u"Printer", None))
-        self.leName.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0430", None))
-        self.leConnetionStr.setPlaceholderText(QCoreApplication.translate("Form", u"\u041f\u043e\u0440\u0442 \u043f\u0440\u043e\u0441\u043b\u0443\u0448\u0438\u0432\u0430\u043d\u0438\u044f (9100, \u043d\u0430\u043f\u0440\u0438\u043c\u0435\u0440)", None))
+        Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
+        self.label_4.setText(QCoreApplication.translate("Form", u"\u041a\u041e\u0414 \u041a\u0410\u0416\u0414\u042b\u0415:", None))
+        self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
         self.tbRun.setText(QCoreApplication.translate("Form", u"R", None))
-        self.label.setText(QCoreApplication.translate("Form", u"\u0411\u0443\u0444\u0435\u0440:", None))
+        self.label_5.setText(QCoreApplication.translate("Form", u" \u0424:", None))
+        self.cbxCodeType.setItemText(0, QCoreApplication.translate("Form", u"\u0423\u041a\u0417", None))
+
+        self.label_6.setText(QCoreApplication.translate("Form", u" \u0412:", None))
     # retranslateUi
 

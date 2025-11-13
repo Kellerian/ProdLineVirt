@@ -12,7 +12,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>280</width>
+    <width>200</width>
     <height>100</height>
    </size>
   </property>
@@ -164,6 +164,11 @@ QScrollBar:add-line {
 	height: 0px;	
 	padding: 0;
 	width: 0px;
+}
+
+QWidget#Form {
+	border: 1px solid #17365D;
+	border-radius: 3px;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,1">
@@ -171,16 +176,16 @@ QScrollBar:add-line {
     <number>1</number>
    </property>
    <property name="leftMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="topMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="rightMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="bottomMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,1,0">

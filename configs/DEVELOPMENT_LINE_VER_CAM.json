@@ -76,7 +76,7 @@
                 "packet_size": 1,
                 "interval": 50,
                 "gen_no_read": false,
-                "no_read_perc": 0,
+                "no_read_perc": 50,
                 "gen_duplicates": false,
                 "duplicates_perc": 0,
                 "gen_grade": false,
@@ -116,7 +116,7 @@
         {
             "take_from": "PRN_9101",
             "give_to": "CAM_23",
-            "interval": 35
+            "interval": 350
         },
         {
             "take_from": "CAM_23",
@@ -126,7 +126,7 @@
         {
             "take_from": "PRN_9102",
             "give_to": "VER_32",
-            "interval": 1100
+            "interval": 35
         },
         {
             "take_from": "VER_32",
@@ -139,7 +139,7 @@
             "interval": 330
         },
         {
-            "take_from": "PRN_9105",
+            "take_from": "PRN_9102",
             "give_to": "CAM_26",
             "interval": 15
         }

@@ -70,6 +70,8 @@ class Ui_MainWindow(object):
         self.acSave.setObjectName(u"acSave")
         self.acClose = QAction(MainWindow)
         self.acClose.setObjectName(u"acClose")
+        self.acAddGenerator = QAction(MainWindow)
+        self.acAddGenerator.setObjectName(u"acAddGenerator")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.horizontalLayout = QHBoxLayout(self.centralwidget)
@@ -117,7 +119,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.scrollArea)
 
-        self.horizontalLayout.setStretch(0, 1)
         self.horizontalLayout.setStretch(1, 2)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menuBar = QMenuBar(MainWindow)
@@ -135,6 +136,8 @@ class Ui_MainWindow(object):
         self.menu.addAction(self.acAddPrinter)
         self.menu.addSeparator()
         self.menu.addAction(self.acAddTransporter)
+        self.menu.addSeparator()
+        self.menu.addAction(self.acAddGenerator)
         self.menu_2.addAction(self.acOpen)
         self.menu_2.addAction(self.acSaveAs)
         self.menu_2.addAction(self.acSave)
@@ -155,6 +158,7 @@ class Ui_MainWindow(object):
         self.acSaveAs.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043a\u0430\u043a...", None))
         self.acSave.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c", None))
         self.acClose.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u043a\u0440\u044b\u0442\u044c", None))
+        self.acAddGenerator.setText(QCoreApplication.translate("MainWindow", u"\u0413\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
         self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u0424\u0430\u0439\u043b", None))
     # retranslateUi

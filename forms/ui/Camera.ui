@@ -6,13 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>260</width>
+    <width>200</width>
     <height>342</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>260</width>
+    <width>200</width>
     <height>250</height>
    </size>
   </property>
@@ -201,6 +201,10 @@ QTabBar::tab:selected {
 QTabBar::tab:!selected {
     margin-top: 1px;
 	font: 8pt &quot;DejaVu Sans Mono&quot;
+}
+QWidget#Form {
+	border: 1px solid #17365D;
+	border-radius: 3px;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
@@ -208,16 +212,16 @@ QTabBar::tab:!selected {
     <number>1</number>
    </property>
    <property name="leftMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="topMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="rightMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="bottomMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,1,0">
@@ -244,7 +248,7 @@ QTabBar::tab:!selected {
         <number>25</number>
        </property>
        <property name="placeholderText">
-        <string>Название устройства</string>
+        <string>Название</string>
        </property>
       </widget>
      </item>
@@ -265,7 +269,7 @@ QTabBar::tab:!selected {
         </font>
        </property>
        <property name="placeholderText">
-        <string>Порт прослушивания (9100, например)</string>
+        <string>Порт</string>
        </property>
       </widget>
      </item>
@@ -327,7 +331,7 @@ QTabBar::tab:!selected {
       <enum>QTabWidget::Triangular</enum>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="elideMode">
       <enum>Qt::ElideMiddle</enum>
@@ -374,7 +378,7 @@ QTabBar::tab:!selected {
             </font>
            </property>
            <property name="text">
-            <string>ОТПРАВЛЯТЬ ЗА РАЗ:</string>
+            <string>ПАКЕТ</string>
            </property>
            <property name="indent">
             <number>5</number>
@@ -453,7 +457,7 @@ QTabBar::tab:!selected {
             </font>
            </property>
            <property name="text">
-            <string>ПЕРЕДАВАТЬ КАЖДЫЕ:</string>
+            <string>ИНТЕРВАЛ</string>
            </property>
            <property name="indent">
             <number>5</number>
@@ -530,7 +534,7 @@ QTabBar::tab:!selected {
          <item>
           <widget class="QPushButton" name="btnSendError">
            <property name="text">
-            <string>Отправить error</string>
+            <string>error</string>
            </property>
           </widget>
          </item>
