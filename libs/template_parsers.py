@@ -1,4 +1,25 @@
 from random import randint
+import re
+
+
+def extract_barcode_regex(text):
+    """
+    Извлекает значение barcode с помощью регулярного выражения
+    Учитывает случаи когда barcode в середине (~gt~...~gt~) и в конце (~gt~...})
+    """
+    try:
+        # Ищем паттерн: ~gt~barcode~gt~(любые символы до ~gt~ или })
+        pattern = r"~gt~barcode~gt~([^~}]+)(?=~gt~|})"
+        match = re.search(pattern, text)
+
+        if match:
+            return match.group(1)
+        else:
+            return None
+
+    except Exception as e:
+        print(f"Ошибка при извлечении barcode: {e}")
+        return None
 
 
 def extract_barcode_value_from_template(msg_received: str) -> list[str]:
@@ -7,6 +28,10 @@ def extract_barcode_value_from_template(msg_received: str) -> list[str]:
     for r, t_row in enumerate(msg_rows, start=0):
         row = t_row.strip()
         dm_extracted = ''
+        if row.startswith("~SPLAMQ"):
+            dm_extracted = extract_barcode_regex(row)
+        if row.startswith("~SPLCDF"):
+            print(row)
         if row.startswith('BARCODE='):
             row = row.replace('BARCODE=', '')
             row = row.replace('~d034', '"')

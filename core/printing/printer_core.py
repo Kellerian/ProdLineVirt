@@ -31,6 +31,7 @@ class PrinterEmul:
             random.randint(0, 255),
             random.randint(0, 255)
         )
+        self.savema_state = 'RUNNING'
 
     def start(self):
         self._can_run = True
@@ -105,6 +106,8 @@ class PrinterEmul:
             f"[{self.name}] MSG FROM {client.getsockname()}: {msg_received}"
         )
         dm_extracted = extract_barcode_value_from_template(msg_received)
+        if "~SPLAMQ" in msg_received:
+            client.sendall("~SPGRES{SPLAMQ:OK}".encode())
         if not dm_extracted:
             return
         self._log.info(f"[{self.name}] BARCODES: {dm_extracted}")
@@ -123,18 +126,9 @@ class PrinterEmul:
         self, msg_received: str, client: socket.socket
     ) -> bool:
         current_buffer_size = len(self._print_buffer)
-        # available_space = self._max_size - current_buffer_size
         response_text = ""
-        # self._log.debug(
-        #     f"[{self.name}] CHECKING IF STATUS REQUEST: {msg_received}"
-        # )
-        # TEST_RESPONSE = [
-        #     '\x20' if self._print_buffer else '\x00',
-        #     f"0,0,0,0,{current_buffer_size}"
-        # ]
         if f"{chr(27)}!?" in msg_received:
             response_text = '\x20' if self._print_buffer else '\x00'
-            # response_text = TEST_RESPONSE[random.randint(0, 1)]
         elif f"{chr(27)}!." in msg_received:
             response_text = "CLEAR BUFFER"
         elif "~!F" in msg_received:
@@ -151,9 +145,11 @@ class PrinterEmul:
             response_text = f'00,{current_buffer_size:05d}'
         elif "OUT @LABEL" in msg_received:
             response_text = f"{self._printed}"
+        elif "~SPLGMQ" in msg_received:
+            field_to_check = msg_received[8:-2]
+            response_text = f'~SPGRES{{SPLGMQ:{field_to_check}={current_buffer_size}}}^'
         elif "~HS" in msg_received:
             response_text = f"0,0,0,0,{current_buffer_size}"
-            # response_text = TEST_RESPONSE[random.randint(0, 1)]
         elif "~S,LABEL" in msg_received:
             response_text = f"{current_buffer_size}"
         # Эмуляция чеквейра
@@ -191,6 +187,28 @@ class PrinterEmul:
             response_text = self._mac
         elif "~S,FEED" in msg_received:
             return True
+        elif "~SPGGFW^" in msg_received:
+            response_text = "~SPGRES{SPGGFW:(v3.29)}^"
+        elif "~SPPSTA^" in msg_received:
+            response_text = f"~SPGRES{{SPPSTA:{self.savema_state}<WORKING}}^"
+        elif "~SPLGSD^" in msg_received:
+            response_text = "data.csv"
+        elif "~SPLDDF" in msg_received:
+            response_text = "~SPGRES{SPLFFG:OK}"
+        elif "~SPLTDS" in msg_received:
+            response_text = "~SPGRES{SPLTDS:OK}"
+        elif "~SPLLTF" in msg_received:
+            response_text = "~SPGRES{SPLLTF:OK}"
+        elif "~SPLCDF" in msg_received:
+            response_text = "~SPGRES{SPLCDF:OK}"
+        elif "~SPPSTP" in msg_received:
+            self.savema_state = 'WAITING'
+            response_text = "~SPGRES{SPPSTP:OK}"
+        elif "~SPPSAP" in msg_received:
+            self.savema_state = 'RUNNING'
+            response_text = "~SPGRES{SPPSAP:OK}"
+        elif "~SPLCMQ" in msg_received:
+            response_text = "CLEAR BUFFER"
         else:
             return False
         # self._log.debug(f"[{self.name}] STATUS RESPONSE: {response_text}")
