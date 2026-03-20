@@ -172,6 +172,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             gen_w = self.add_generator()
             gen_w.set_to_ids(to_id)
             gen_w.set_generator_type(gen.generator_type)
+            gen_w.set_gtin(gen.gtin)
             gen_w.set_interval(gen.interval)
 
     def process_config(self, config: ConfigFile):

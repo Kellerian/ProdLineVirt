@@ -146,7 +146,8 @@
     ],
     "generators": [
         {
-            "generator_type": "UKZ",
+            "generator_type": "KM_01_14_21_13_93_4",
+            "gtin": "03665585002190",
             "give_to": "CAM_23",
             "interval": 250
         }

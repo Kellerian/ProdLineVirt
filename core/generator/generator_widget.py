@@ -24,6 +24,8 @@ class GeneratorWidget(QWidget, Ui_Form):
         self._device_data: dict[int, CameraWidget | PrinterWidget] = {}
         self.model_out: QStandardItemModel | None = None
         self.code_type: CodeType = CodeType.UKZ
+        self.gtin: str = self.leGtin.text().strip()
+        self._populate_code_type_selection()
 
     def _setup_icon(self, toggled: bool):
         if toggled:
@@ -39,6 +41,12 @@ class GeneratorWidget(QWidget, Ui_Form):
         self._timer_sender.timeout.connect(self.send_data)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxCodeType.currentIndexChanged.connect(self.set_code_type)
+
+    def _populate_code_type_selection(self):
+        model = QStandardItemModel()
+        for c in CodeType:
+            model.appendRow(QStandardItem(c.name))
+        self.cbxCodeType.setModel(model)
 
     def _get_model_current_widget(
         self, cbx: QComboBox, idx: int
@@ -67,6 +75,10 @@ class GeneratorWidget(QWidget, Ui_Form):
             self.code_type = CodeType(generator_type)
         except ValueError:
             self.code_type = CodeType[generator_type]
+
+    def set_gtin(self, gtin: str):
+        self.gtin = gtin
+        self.leGtin.setText(gtin)
 
     def set_code_type(self, _: int | None = None):
         self.set_generator_type(self.cbxCodeType.currentText())
@@ -116,6 +128,7 @@ class GeneratorWidget(QWidget, Ui_Form):
         self.spInterval.setValue(value)
 
     def start(self, toggled: bool):
+        self.gtin = self.leGtin.text().strip()
         self._timer_sender.setInterval(self.spInterval.value())
         self._setup_icon(toggled)
         self.run(toggled)
@@ -124,7 +137,7 @@ class GeneratorWidget(QWidget, Ui_Form):
         self._timer_sender.setInterval(value)
 
     def send_data(self):
-        _c = get_new_code(self.code_type)
+        _c = get_new_code(self.gtin, self.code_type)
         row = QStandardItem(get_clean_code(_c))
         self.model_out.appendRow(row)
 
@@ -140,11 +153,13 @@ class GeneratorWidget(QWidget, Ui_Form):
 
     def options(self) -> GeneratorConfig:
         generator_type = self.code_type
+        gtin = self.leGtin.text().strip()
         to_wd = self._get_model_current_widget(
             self.cbxTo, self.cbxTo.currentIndex()
         )
         return GeneratorConfig(
             generator_type=generator_type.name,
+            gtin=gtin,
             give_to=to_wd.name,
             interval=self.spInterval.value()
         )

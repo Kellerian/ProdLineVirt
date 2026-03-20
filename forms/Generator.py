@@ -16,16 +16,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QComboBox, QHBoxLayout,
-    QLabel, QSizePolicy, QSpinBox, QToolButton,
-    QVBoxLayout, QWidget)
+    QLabel, QLineEdit, QSizePolicy, QSpinBox,
+    QToolButton, QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(238, 100)
-        Form.setMinimumSize(QSize(200, 100))
-        Form.setMaximumSize(QSize(280, 100))
+        Form.resize(280, 130)
+        Form.setMinimumSize(QSize(200, 130))
+        Form.setMaximumSize(QSize(280, 130))
         Form.setStyleSheet(u"QToolButton {\n"
 "    qproperty-alignment: AlignCenter;\n"
 "	border: 1px solid #FF17365D;\n"
@@ -242,7 +242,6 @@ class Ui_Form(object):
         self.horizontalLayout.addWidget(self.label_5)
 
         self.cbxCodeType = QComboBox(Form)
-        self.cbxCodeType.addItem("")
         self.cbxCodeType.setObjectName(u"cbxCodeType")
         self.cbxCodeType.setSizeAdjustPolicy(QComboBox.AdjustToContents)
 
@@ -271,6 +270,34 @@ class Ui_Form(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setSpacing(1)
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.horizontalLayout_3.setContentsMargins(-1, 0, 0, 0)
+        self.label_7 = QLabel(Form)
+        self.label_7.setObjectName(u"label_7")
+        self.label_7.setFont(font)
+
+        self.horizontalLayout_3.addWidget(self.label_7)
+
+        self.leGtin = QLineEdit(Form)
+        self.leGtin.setObjectName(u"leGtin")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.leGtin.sizePolicy().hasHeightForWidth())
+        self.leGtin.setSizePolicy(sizePolicy1)
+        self.leGtin.setMinimumSize(QSize(249, 0))
+        self.leGtin.setMaximumSize(QSize(249, 16777215))
+        self.leGtin.setMaxLength(14)
+        self.leGtin.setAlignment(Qt.AlignCenter)
+
+        self.horizontalLayout_3.addWidget(self.leGtin)
+
+        self.horizontalLayout_3.setStretch(1, 1)
+
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
+
         self.verticalLayout.setStretch(0, 1)
         self.verticalLayout.setStretch(1, 1)
         self.verticalLayout.setStretch(2, 1)
@@ -282,12 +309,14 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
-        self.label_4.setText(QCoreApplication.translate("Form", u"\u041a\u041e\u0414 \u041a\u0410\u0416\u0414\u042b\u0415:", None))
+        self.label_4.setText(QCoreApplication.translate("Form", u"\u041d\u041e\u0412\u042b\u0419 \u041a\u041e\u0414 \u041a\u0410\u0416\u0414\u042b\u0415:", None))
         self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
         self.tbRun.setText(QCoreApplication.translate("Form", u"R", None))
         self.label_5.setText(QCoreApplication.translate("Form", u" \u0424:", None))
-        self.cbxCodeType.setItemText(0, QCoreApplication.translate("Form", u"\u0423\u041a\u0417", None))
-
         self.label_6.setText(QCoreApplication.translate("Form", u" \u0412:", None))
+        self.label_7.setText(QCoreApplication.translate("Form", u" G:", None))
+        self.leGtin.setInputMask(QCoreApplication.translate("Form", u"00000000000000", None))
+        self.leGtin.setText("")
+        self.leGtin.setPlaceholderText(QCoreApplication.translate("Form", u"GTIN \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438", None))
     # retranslateUi
 

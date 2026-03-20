@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>238</width>
-    <height>100</height>
+    <width>280</width>
+    <height>130</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>200</width>
-    <height>100</height>
+    <height>130</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>280</width>
-    <height>100</height>
+    <height>130</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -171,7 +171,7 @@ QWidget#Form {
 	border-radius: 3px;
 }</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,1">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1,1,0">
    <property name="spacing">
     <number>1</number>
    </property>
@@ -203,7 +203,7 @@ QWidget#Form {
         </font>
        </property>
        <property name="text">
-        <string>КОД КАЖДЫЕ:</string>
+        <string>НОВЫЙ КОД КАЖДЫЕ:</string>
        </property>
       </widget>
      </item>
@@ -319,11 +319,6 @@ QWidget#Form {
        <property name="sizeAdjustPolicy">
         <enum>QComboBox::AdjustToContents</enum>
        </property>
-       <item>
-        <property name="text">
-         <string>УКЗ</string>
-        </property>
-       </item>
       </widget>
      </item>
     </layout>
@@ -352,6 +347,74 @@ QWidget#Form {
       <widget class="QComboBox" name="cbxTo">
        <property name="sizeAdjustPolicy">
         <enum>QComboBox::AdjustToContents</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1">
+     <property name="spacing">
+      <number>1</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label_7">
+       <property name="font">
+        <font>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>10</pointsize>
+         <italic>false</italic>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string> G:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="leGtin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>249</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>249</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="inputMask">
+        <string>00000000000000</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="maxLength">
+        <number>14</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="placeholderText">
+        <string>GTIN продукции</string>
        </property>
       </widget>
      </item>

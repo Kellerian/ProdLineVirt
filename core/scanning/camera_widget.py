@@ -33,6 +33,12 @@ class CameraWidget(QWidget, Ui_Form):
 
     def send_data(self):
         batch_size = self.spSize.value()
+        self.lstData.setToolTip(
+            f"Данных на отправку {self.model_in.rowCount()}"
+        )
+        self.lstProcessed.setToolTip(
+            f"Данных обработано {self.model_out.rowCount()}"
+        )
         if self.model_in.rowCount() < batch_size:
             return
 
