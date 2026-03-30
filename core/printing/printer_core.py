@@ -110,6 +110,9 @@ class PrinterEmul:
             client.sendall("~SPGRES{SPLAMQ:OK}".encode())
         if not dm_extracted:
             return
+
+        self._printed += len(dm_extracted)
+
         self._log.info(f"[{self.name}] BARCODES: {dm_extracted}")
         for code in dm_extracted:
             self._add_barcode_to_buffer(code)
@@ -117,7 +120,6 @@ class PrinterEmul:
     def _add_barcode_to_buffer(self, barcode: str):
         processed_code = process_barcode(barcode)
         self._print_buffer.append(processed_code)
-        self._printed += 1
         self._log.info(
             f"[{self.name}] <{self._printed}> PRINTED: {barcode}"
         )
@@ -149,7 +151,7 @@ class PrinterEmul:
             field_to_check = msg_received[8:-2]
             response_text = f'~SPGRES{{SPLGMQ:{field_to_check}={current_buffer_size}}}^'
         elif "~HS" in msg_received:
-            response_text = f"0,0,0,0,{current_buffer_size}"
+            response_text = f"0,0,0,0,{self._printed}"
         elif "~S,LABEL" in msg_received:
             response_text = f"{current_buffer_size}"
         # Эмуляция чеквейра
