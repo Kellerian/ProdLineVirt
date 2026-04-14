@@ -10,12 +10,15 @@ class CodeQuality(Enum):
     F = 'F'
 
 
-GOOD_CODES = (CodeQuality.A.value, CodeQuality.B.value)
-
-
-BAD_CODES = (
+GOOD_CODES = {
+    CodeQuality.A.value,
+    CodeQuality.B.value,
     CodeQuality.C.value,
-    CodeQuality.D.value,
+    CodeQuality.D.value
+}
+
+
+BAD_CODES = {
     CodeQuality.E.value,
     CodeQuality.F.value
-)
+}
