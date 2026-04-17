@@ -56,4 +56,6 @@ class CameraProxy(QObject):
 
     def _get_scanned_data(self):
         sent_data = self._camera.get_sent_data()
+        if not sent_data:
+            return
         self.scanned.emit(sent_data)

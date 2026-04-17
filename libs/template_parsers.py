@@ -61,11 +61,11 @@ def extract_barcode_value_from_template(msg_received: str) -> list[str]:
 def process_barcode(barcode: str) -> str:
     if barcode.startswith("~1"):
         barcode = barcode[2:]
-    if '07808631857726' in barcode:
-        weight = randint(100, 1000)
-        barcode = (
-            f"{barcode}{chr(29)}3103{weight:06}"
-        )
+    # if '07808631857726' in barcode:
+    #     weight = randint(100, 1000)
+    #     barcode = (
+    #         f"{barcode}{chr(29)}3103{weight:06}"
+    #     )
     return barcode
 
 
