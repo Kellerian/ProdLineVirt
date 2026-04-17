@@ -10,7 +10,7 @@ def get_new_code(gtin: str, code_type: CodeType) -> str:
         case CodeType.UKZ:
             return ai01 + get_ai(21, 12)
         case CodeType.KM_01_14_21_6_93_4:
-            return ai01 + get_ai(21, 6) + get_ai(93, 4)
+            return ai01 + get_ai(21, 6) + GS + get_ai(93, 4)
         case CodeType.KM_01_14_21_6_93_4_3103_6:
             r_weight = randint(100, 999)
             ai3103 = f"3103{r_weight:>06}"

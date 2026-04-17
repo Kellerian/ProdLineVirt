@@ -1,5 +1,5 @@
 from logging import getLogger
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Slot
 from PySide6.QtGui import QStandardItem, QStandardItemModel, Qt
 from PySide6.QtWidgets import QComboBox, QWidget
 
@@ -20,12 +20,12 @@ class GeneratorWidget(QWidget, Ui_Form):
         self.name = f"GW_{id(self)}"
         self._setup_icon(self.tbRun.isChecked())
         self._timer_sender = QTimer()
-        self._connect_ui()
         self._device_data: dict[int, CameraWidget | PrinterWidget] = {}
         self.model_out: QStandardItemModel | None = None
         self.code_type: CodeType = CodeType.UKZ
         self.gtin: str = self.leGtin.text().strip()
         self._populate_code_type_selection()
+        self._connect_ui()
 
     def _setup_icon(self, toggled: bool):
         if toggled:
@@ -45,8 +45,11 @@ class GeneratorWidget(QWidget, Ui_Form):
     def _populate_code_type_selection(self):
         model = QStandardItemModel()
         for c in CodeType:
-            model.appendRow(QStandardItem(c.name))
+            model.appendRow(
+                [QStandardItem(c.value), QStandardItem(c.name)]
+            )
         self.cbxCodeType.setModel(model)
+        self.cbxCodeType.setModelColumn(0)
 
     def _get_model_current_widget(
         self, cbx: QComboBox, idx: int
@@ -80,19 +83,29 @@ class GeneratorWidget(QWidget, Ui_Form):
         self.gtin = gtin
         self.leGtin.setText(gtin)
 
-    def set_code_type(self, _: int | None = None):
-        self.set_generator_type(self.cbxCodeType.currentText())
+    @Slot(int)
+    def set_code_type(self, row: int):
+        if row < 0:
+            return
+        model = self.cbxCodeType.model()
+        idx = model.index(row, 0)
+        code_type = model.data(idx, Qt.ItemDataRole.DisplayRole)
+        self.set_generator_type(code_type)
+
+    def select_generator(self, generator_name: str):
+        self.set_cbx_current_value(self.cbxCodeType, generator_name)
 
     @staticmethod
     def set_cbx_current_value(cbx: QComboBox, value: str):
         model = cbx.model()
+        set_row = 0
         for row in range(model.rowCount()):
             index = model.index(row, 1)
             data = model.data(index, Qt.ItemDataRole.DisplayRole)
             if data == value:
-                cbx.setCurrentIndex(row)
-                return
-        cbx.setCurrentIndex(0)
+                set_row = row
+                break
+        cbx.setCurrentIndex(set_row)
 
     def get_data_models(self) -> QStandardItemModel:
         to_model = QStandardItemModel()
