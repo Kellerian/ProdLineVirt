@@ -34,9 +34,9 @@
                 "packet_size": 1,
                 "interval": 35,
                 "gen_no_read": false,
-                "no_read_perc": 0,
+                "no_read_perc": 2,
                 "gen_duplicates": false,
-                "duplicates_perc": 0,
+                "duplicates_perc": 4,
                 "gen_grade": false,
                 "grade_perc": 0
             }
@@ -45,7 +45,7 @@
             "name": "CAM_24",
             "port": 24,
             "config": {
-                "packet_size": 1,
+                "packet_size": 6,
                 "interval": 50,
                 "gen_no_read": false,
                 "no_read_perc": 0,
@@ -134,8 +134,8 @@
             "interval": 310
         },
         {
-            "take_from": "CAM_25",
-            "give_to": "VER_32",
+            "take_from": "PRN_9103",
+            "give_to": "VER_33",
             "interval": 330
         },
         {
@@ -147,7 +147,7 @@
     "generators": [
         {
             "generator_type": "KM_01_14_21_13_93_4",
-            "gtin": "03665585002190",
+            "gtin": "07665585002196",
             "give_to": "CAM_23",
             "interval": 250
         }

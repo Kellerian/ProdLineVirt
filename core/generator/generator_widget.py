@@ -112,9 +112,10 @@ class GeneratorWidget(QWidget, Ui_Form):
         for device in self._device_data.values():
             dev_name = device.name
             dev_id = id(device)
-            to_model.appendRow(
-                [QStandardItem(dev_name), QStandardItem(str(dev_id))]
-            )
+            if isinstance(device, CameraWidget):
+                to_model.appendRow(
+                    [QStandardItem(dev_name), QStandardItem(str(dev_id))]
+                )
         return to_model
 
     def _set_cbx_model(self, cbx: QComboBox, model: QStandardItemModel):
