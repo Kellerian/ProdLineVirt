@@ -1,11 +1,17 @@
-from PySide6.QtCore import QModelIndex, Qt, QTimer
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QLabel, QListView, QWidget
 from core.scanning.camera_proxy import CameraProxy
 from core.scanning.data import CameraConfig, CameraParams
 from forms.Camera import Ui_Form
+from libs.code_scheduler import CodeScheduler
 from libs.datamatrix import get_gs1dm_pixmap
-from libs.model_processing import CustomItemModel
+from libs.model_processing import (
+    CustomItemModel,
+    count_ready_prefix,
+    create_code_item,
+    stamp_item,
+)
 
 
 class CameraWidget(QWidget, Ui_Form):
@@ -24,15 +30,17 @@ class CameraWidget(QWidget, Ui_Form):
         self.lstProcessed.setModel(self.model_out)
         self.lstProcessed.setDragEnabled(True)
         self._camera = self._get_camera_proxy()
-        self._timer_sender = QTimer()
-        self._timer_sender.setInterval(self.spInterval.value())
+        self._scheduler = CodeScheduler()
+        self.model_in.rowsInserted.connect(self._on_model_in_rows_inserted)
         self._connect_ui()
         self.leName.setText(name)
         self.leConnetionStr.setText(str(port))
         self._lbl: QLabel | None = None
 
-    def send_data(self):
+    def send_data(self) -> None:
+        """Send a batch when the leading FIFO prefix is ready for transfer."""
         batch_size = self.spSize.value()
+        interval = self.spInterval.value()
         self.lstData.setToolTip(
             f"Данных на отправку {self.model_in.rowCount()}"
         )
@@ -42,12 +50,26 @@ class CameraWidget(QWidget, Ui_Form):
         if self.model_in.rowCount() < batch_size:
             return
 
+        ready_count = count_ready_prefix(self.model_in, interval)
+        if ready_count < batch_size:
+            return
+
         data_to_send: list[str] = []
         for _ in range(batch_size):
             row = self.model_in.takeRow(0)
             item = row[0]
             data_to_send.append(item.text())
         self._camera.send_data(data_to_send)
+
+    def _on_model_in_rows_inserted(
+        self, parent: QModelIndex, first: int, last: int
+    ) -> None:
+        """Re-stamp items moved into the input queue (e.g. drag from processed list)."""
+        del parent
+        for row in range(first, last + 1):
+            item = self.model_in.item(row, 0)
+            if item is not None:
+                stamp_item(item)
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
@@ -61,9 +83,6 @@ class CameraWidget(QWidget, Ui_Form):
 
         self.cbxGrade.toggled.connect(self.set_grade_settings)
         self.spGradeErrorPercent.valueChanged.connect(self.set_grade_settings)
-        self.spInterval.valueChanged.connect(self.set_interval_settings)
-        self._timer_sender.timeout.connect(self.send_data)
-
         self.lstData.doubleClicked.connect(self.create_image)
         self.lstProcessed.doubleClicked.connect(self.create_image)
 
@@ -71,7 +90,7 @@ class CameraWidget(QWidget, Ui_Form):
         self.tbCoords.toggled.connect(self.set_coords_option)
 
     def _send_error(self):
-        self.model_in.appendRow(QStandardItem('error'))
+        self.model_in.appendRow(create_code_item('error'))
 
     def _get_camera_proxy(self) -> CameraProxy:
         cp = CameraProxy()
@@ -80,7 +99,7 @@ class CameraWidget(QWidget, Ui_Form):
 
     def populate_scanned_data(self, data: list[str]):
         for row in data:
-            self.model_out.appendRow(QStandardItem(row))
+            self.model_out.appendRow(create_code_item(row))
 
     def set_no_read_settings(self):
         self._camera.set_noread(
@@ -91,9 +110,6 @@ class CameraWidget(QWidget, Ui_Form):
         self._camera.set_grade(
             self.cbxGrade.isChecked(), self.spGradeErrorPercent.value()
         )
-
-    def set_interval_settings(self, value: int):
-        self._timer_sender.setInterval(value)
 
     def set_dups_settings(self):
         self._camera.set_duplicates(
@@ -111,9 +127,11 @@ class CameraWidget(QWidget, Ui_Form):
             self.tbRun.setText("R")
             self.tbRun.setStyleSheet("color: #00FF00")
 
-    def _clear_data(self):
+    def clear_data(self) -> None:
+        """Clear input/output queues without stopping the emulator."""
         self.model_in.clear()
         self.model_out.clear()
+        self._camera.clear_queues()
 
     def run(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():
@@ -129,11 +147,11 @@ class CameraWidget(QWidget, Ui_Form):
             except ValueError:
                 return
             self._run_camera(name, port)
-            self._timer_sender.start()
+            self._scheduler.start(self.send_data)
         else:
-            self._timer_sender.stop()
+            self._scheduler.stop()
             self._camera.stop()
-            self._clear_data()
+            self.clear_data()
 
     def _run_camera(self, name: str, port: int):
         self._camera.start(name, port)

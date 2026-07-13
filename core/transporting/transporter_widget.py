@@ -1,13 +1,18 @@
+import time
 from logging import getLogger
-from PySide6.QtCore import QTimer
+
 from PySide6.QtGui import QStandardItem, QStandardItemModel, Qt
 from PySide6.QtWidgets import QComboBox, QWidget
+
+from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
 from core.transporting.data import TransporterConfig
 from forms.Transporter import Ui_Form
-from libs.loggers import UI_LOGGER
 from libs.code_cleanup import get_clean_code
+from libs.code_scheduler import CodeScheduler
+from libs.loggers import UI_LOGGER
+from libs.model_processing import create_code_item, is_item_ready
 
 
 class TransporterWidget(QWidget, Ui_Form):
@@ -17,9 +22,10 @@ class TransporterWidget(QWidget, Ui_Form):
         self._log = getLogger(UI_LOGGER)
         self.name = f"TRW_{id(self)}"
         self._setup_icon(self.tbRun.isChecked())
-        self._timer_sender = QTimer()
+        self._code_scheduler = CodeScheduler()
+        self._last_transferred_at: float | None = None
         self._connect_ui()
-        self._device_data: dict[int, CameraWidget | PrinterWidget] = {}
+        self._device_data: dict[int, CameraWidget | PrinterWidget | ScannerWidget] = {}
         self.model_in: QStandardItemModel | None = None
         self.model_out: QStandardItemModel | None = None
 
@@ -34,13 +40,12 @@ class TransporterWidget(QWidget, Ui_Form):
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.start)
         self.spInterval.valueChanged.connect(self.set_interval_settings)
-        self._timer_sender.timeout.connect(self.send_data)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxFrom.currentIndexChanged.connect(self.set_from_model)
 
     def _get_model_current_widget(
         self, cbx: QComboBox, idx: int
-    ) -> CameraWidget | PrinterWidget | None:
+    ) -> CameraWidget | PrinterWidget | ScannerWidget | None:
         model = cbx.model()
         index = model.index(idx, 1)
         data = model.data(index, Qt.ItemDataRole.DisplayRole)
@@ -54,6 +59,9 @@ class TransporterWidget(QWidget, Ui_Form):
         if idx is None:
             idx = self.cbxFrom.currentIndex()
         widget = self._get_model_current_widget(self.cbxFrom, idx)
+        if widget is None:
+            self._log.warning(f"Не выбран источник: idx={idx}")
+            return
         self.model_in = widget.model_out
         self._log.info(f"БЕРЁМ ИЗ {widget.name}")
 
@@ -61,6 +69,9 @@ class TransporterWidget(QWidget, Ui_Form):
         if idx is None:
             idx = self.cbxTo.currentIndex()
         widget = self._get_model_current_widget(self.cbxTo, idx)
+        if widget is None:
+            self._log.warning(f"Не выбран приёмник: idx={idx}")
+            return
         self.model_out = widget.model_in
         self._log.info(f"ПЕРЕДАЁМ В {widget.name}")
 
@@ -84,7 +95,7 @@ class TransporterWidget(QWidget, Ui_Form):
             from_model.appendRow(
                 [QStandardItem(dev_name), QStandardItem(str(dev_id))]
             )
-            if isinstance(device, CameraWidget):
+            if isinstance(device, (CameraWidget, ScannerWidget)):
                 to_model.appendRow(
                     [QStandardItem(dev_name), QStandardItem(str(dev_id))]
                 )
@@ -99,7 +110,7 @@ class TransporterWidget(QWidget, Ui_Form):
         cbx.blockSignals(False)
 
     def setup_models(
-        self, device_widgets: dict[int, CameraWidget | PrinterWidget]
+        self, device_widgets: dict[int, CameraWidget | PrinterWidget | ScannerWidget]
     ):
         if self.tbRun.isChecked():
             return
@@ -115,15 +126,17 @@ class TransporterWidget(QWidget, Ui_Form):
     def set_interval(self, value: int):
         self.spInterval.setValue(value)
 
-    def start(self, toggled: bool):
-        self._timer_sender.setInterval(self.spInterval.value())
+    def start(self, toggled: bool) -> None:
+        """Toggle run state and refresh the transport icon."""
         self._setup_icon(toggled)
         self.run(toggled)
 
-    def set_interval_settings(self, value: int):
-        self._timer_sender.setInterval(value)
+    def set_interval_settings(self, value: int) -> None:
+        """Handle interval UI change; delay is read dynamically in ``send_data``."""
+        del value
 
-    def send_data(self):
+    def send_data(self) -> None:
+        """Transfer the first ready code from source to destination (FIFO)."""
         if self.model_in is None or self.model_out is None:
             self._log.warning(
                 f"Не заданы источники: IN:{self.model_in} OUT:{self.model_out}"
@@ -131,20 +144,33 @@ class TransporterWidget(QWidget, Ui_Form):
             return
         if not self.model_in.rowCount():
             return
+        item = self.model_in.item(0, 0)
+        if item is None:
+            return
+        interval_ms = self.spInterval.value()
+        now = time.monotonic()
+        if self._last_transferred_at is not None:
+            elapsed_ms = (now - self._last_transferred_at) * 1000.0
+            if elapsed_ms < interval_ms:
+                return
+        if not is_item_ready(item, interval_ms):
+            return
         row = self.model_in.takeRow(0)
-        for i, _r in enumerate(row.copy()):
-            row[i] = QStandardItem(get_clean_code(_r.text()))
-        self.model_out.appendRow(row)
+        code = get_clean_code(row[0].text())
+        self.model_out.appendRow(create_code_item(code))
+        self._last_transferred_at = now
 
-    def run(self, toggled: bool):
+    def run(self, toggled: bool) -> None:
+        """Start or stop per-code transfer polling."""
         if toggled:
             self._log.info(f"ТРАНСПОРТ СТАРТ")
             self.set_from_model()
             self.set_to_model()
-            self._timer_sender.start()
+            self._code_scheduler.start(self.send_data)
         else:
             self._log.info(f"ТРАНСПОРТ ОСТАНОВКА")
-            self._timer_sender.stop()
+            self._code_scheduler.stop()
+            self._last_transferred_at = None
         self.cbxTo.setDisabled(toggled)
         self.cbxFrom.setDisabled(toggled)
 

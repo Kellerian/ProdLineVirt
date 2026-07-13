@@ -1,0 +1,51 @@
+2026-07-10 — fix-qt-light-theme (ревью #6): CHANGES.LOG — согласование истории версий b0001/b0002; docs/line_emulator/line_emulator.md — примеры VERSION b0002; docs/line_emulator/frontend/widget-backgrounds.md — «многослойный фикс», setup_logging в порядке запуска.
+2026-07-10 — fix-qt-light-theme: libs/qt_theme.py (apply_light_theme → windowsvista на Windows); main.py — вызов после QApplication; forms/ui/Main.ui — QSS QMenuBar/QMenu; forms/ui/{Camera,Printer,Scanner,Transporter,Generator}.ui — QComboBox QAbstractItemView + ::item; forms/*.py регенерация; docs/line_emulator/frontend/widget-backgrounds.md — раздел «Тема Windows»; client_info.py VERSION 1.0.0.1.b0002.
+2026-07-10 — forms/ui/Main.ui, forms/Main.py, core/main_ui/line_emul.py: интеграция ScannerWidget в главное окно — меню «Добавить → Сканер», add/load/save секции scanners в JSON, остановка в closeEvent/clear_ui, _sync_scanner_name_generator (подзадача #5).
+2026-07-10 — docs/line_emulator/line_emulator.md: раздел «Сборка exe» (PyInstaller main.spec, hiddenimports pyserial/qtawesome), описание configs/scanner_example.json (подзадача #9).
+2026-07-10 — docs/line_emulator/bulk-control.md: меню «Управление», массовый start/stop/clear, clear_data() API, порядок pipeline; обновлён line_emulator.md (подзадача #10).
+2026-07-10 — docs/line_emulator/scanner_unit_tests.md: unit-тесты подсистемы сканера (28 тестов — serial_port, ScannerEmul, ConfigFile.scanners, transport/generator wiring); обновлены line_emulator.md, scanner_serial.md (подзадача #8).
+2026-07-10 — build/spec/main.spec: hiddenimports pyserial (serial, serial.tools.list_ports) и qtawesome (iconic_font), datas qtawesome/fonts; инкремент client_info.VERSION до 1.0.0.1.b0001 (подзадача #9; далее b0002 — fix-qt-light-theme); configs/scanner_example.json; docs/line_emulator/com0com_setup.md (подзадача #9).
+2026-07-10 — forms/ui/Main.ui, forms/Main.py, core/main_ui/line_emul.py: меню «Управление» — массовый запуск/остановка/очистка по типам виджетов; порядок «Всё»: устройства→перевозчики→генераторы (остановка обратно) (подзадача #10).
+2026-07-10 — core/printing/printer_widget.py, printer_proxy.py; core/scanning/camera_widget.py, camera_proxy.py, camera_core.py: публичный clear_data(); PrinterProxy.clear_buffer(), CameraProxy.clear_queues() при очистке во время Run (подзадача #10).
+2026-07-10 — tests/test_core/test_bulk_control.py: unit-тесты clear_data, bulk start/stop order, bulk clear без остановки (подзадача #10).
+2026-07-10 — docs/line_emulator/: интеграция ScannerWidget в Transport и Generator (#6) — wiring model_in/model_out, combo, null guards; обновлены line_emulator.md, frontend/scanner-widget.md, code_scheduler.md, model_processing_timing.md, scanner_serial.md, frontend/scanner-ui.md.
+2026-07-10 — docs/line_emulator/line_emulator.md, frontend/scanner-widget.md, scanner_serial.md: интеграция ScannerWidget в MainLineField — acAddScanner, save/load scanners, closeEvent, _sync_scanner_name_generator, setup_models при _add_device (подзадача #5).
+2026-07-10 — tests/test_libs/test_serial_port.py, tests/test_core/test_scanner_emul.py, test_scanner_config.py, test_scanner_transport.py: unit-тесты serial lib, ScannerEmul (mock COM), ConfigFile.scanners, интеграция ScannerWidget в transporter/generator (подзадача #8).
+2026-07-10 — forms/Generator.py: восстановлен валидный Python UIC после случайной перезаписи C++-заголовком (блокировал импорт generator_widget в тестах).
+2026-07-10 — core/transporting/transporter_widget.py, core/generator/generator_widget.py: set_from_model/set_to_model — ранний return с warning при отсутствии выбранного виджета в combo.
+2026-07-10 — forms/ui/Generator.ui, forms/Generator.py: фон Generator #fff9c4 (amber 100) вместо #fffde7 для лучшей различимости с Printer #fff3e0.
+2026-07-10 — forms/ui/Printer.ui, Camera.ui, Transporter.ui, Generator.ui и forms/*.py: светлые фоны QWidget#Form по типу виджета (Printer #fff3e0, Camera #e8f5e9, Transporter #e3f2fd, Generator #fffde7); Scanner #f3e5f5 без изменений.
+2026-07-10 — core/transporting/transporter_widget.py, core/generator/generator_widget.py: ScannerWidget в combo from/to — источник через model_out, приёмник через model_in (как CameraWidget).
+2026-07-10 — core/barcode_scanner/scanner_widget.py: ревью #4 — blockSignals при сбросе Run из валидации (имя, COM, порт), чтобы не вызывать clear_data() и не очищать очередь.
+2026-07-10 — core/barcode_scanner/scanner_widget.py, scanner_proxy.py, scanner_core.py: ревью #4 — open_failed при сбое COM в фоне (сброс Run + QMessageBox), clear_queues в clear_data(), обязательное название перед запуском, удалён неиспользуемый импорт Qt.
+2026-07-10 — docs/line_emulator/frontend/scanner-ui.md: техническая документация UI-формы виджета сканера (подзадача #3 плана serial-barcode-scanner).
+2026-07-10 — docs/line_emulator/scanner_serial.md: инфраструктура Serial и ядро эмулятора сканера (libs/serial_port, ScannerEmul, ScannerProxy, SCANNER_LOGGER); обновлена docs/line_emulator/line_emulator.md.
+2026-07-10 — docs/line_emulator/line_emulator.md: раздел «Конфигурация JSON» — ScannerParams, ScannerConfig, scanners в ConfigFile, to_serial_port_config(), обратная совместимость (подзадача #2).
+2026-07-10 — forms/ui/Scanner.ui, forms/Scanner.py: placeholder «Выберите порт» в cbxComPort (disabled item).
+2026-07-10 — core/barcode_scanner/scanner_core.py: при ошибке открытия COM — _can_run=False; try/finally для _close_serial(); тип _serial: Serial | None.
+2026-07-10 — core/barcode_scanner/data.py: stopbits как float (согласовано с SerialPortConfig); ScannerConfig.to_serial_port_config().
+2026-07-10 — core/barcode_scanner/data.py, core/main_ui/data.py: ScannerParams, ScannerConfig; секция scanners в ConfigFile (JSON save/load, обратная совместимость).
+2026-07-10 — forms/ui/Scanner.ui, forms/Scanner.py: UI-форма виджета эмулятора сканера ШК — название, COM-порт (combo), R/S, ручной ввод + send, очередь lstData (DropOnly), фон #f3e5f5.
+2026-07-10 — libs/serial_port.py: pyserial-обёртка — list_available_ports, SerialPortConfig, open_serial_port, write_barcode (суффикс \r\n).
+2026-07-10 — core/barcode_scanner/scanner_core.py, scanner_proxy.py: ScannerEmul (COM в фоновом потоке) и ScannerProxy (Signal scanned, QTimer 250 мс).
+2026-07-10 — libs/loggers.py: SCANNER_LOGGER (SCN); requirements.txt: pyserial==3.5.
+2026-07-06 — docs/line_emulator/model_processing_timing.md: раздел покрытия тестами — burst unit-тесты transporter (test_transporter_burst.py, _last_transferred_at).
+2026-07-06 — tests/test_core/test_transporter_burst.py: unit-тест burst-сценария (N кодов с одной меткой → одна передача за spInterval).
+2026-07-06 — core/transporting/transporter_widget.py: _last_transferred_at — inter-transfer rate limit (~spInterval между передачами), сброс при остановке; устраняет burst при пакетном источнике (принтер).
+2026-07-06 — docs/line_emulator/code_scheduler.md, model_processing_timing.md: inter-transfer rate limit транспортёра (_last_transferred_at) отмечен как реализованный (#2); burst описан в прошедшем времени; якорь для раздела burst в code_scheduler.md.
+2026-07-06 — build/spec/main.spec, requirements.txt: добавлен shortuuid (используется в core/generator/generators.py) для сборки exe.
+2026-07-06 — docs/line_emulator/code_scheduler.md: интеграция GeneratorWidget (#6) — _last_generated_at, create_code_item, динамический spInterval, warning при model_out None; обновлены line_emulator.md, model_processing_timing.md.
+2026-07-06 — docs/line_emulator/code_scheduler.md: интеграция TransporterWidget (#5) — is_item_ready, takeRow, create_code_item в приёмник, динамический spInterval; обновлены line_emulator.md, model_processing_timing.md.
+2026-07-06 — docs/line_emulator/code_scheduler.md: интеграция CameraWidget (#4) — count_ready_prefix, FIFO batch, rowsInserted/stamp_item; обновлены model_processing_timing.md, line_emulator.md.
+2026-07-06 — core/transporting/transporter_widget.py: _timer_sender заменён на CodeScheduler; send_data переносит первый код только после is_item_ready (FIFO), в приёмник — create_code_item с новой меткой (#5).
+2026-07-06 — core/generator/generator_widget.py: CodeScheduler + _last_generated_at — генерация кодов с интервалом ~spInterval (per-code timing, #6).
+2026-07-06 — core/scanning/camera_widget.py: _timer_sender заменён на CodeScheduler; send_data с count_ready_prefix и FIFO batch; rowsInserted → stamp_item для drag-move; interval читается динамически из spInterval.
+2026-07-06 — libs/model_processing.py: CustomItemModel.dropMimeData — внешний text-drop в lstData камеры через create_code_item; тест update_model_data + ARRIVAL_TIME_ROLE.
+2026-07-06 — libs/model_processing.py, libs/drag_drop_list_view.py, camera/generator/transporter widgets: все точки входа кодов в pipeline используют create_code_item (arrival_time в UserRole).
+2026-07-06 — docs/line_emulator/line_emulator.md: карта приложения эмулятора производственной линии (main.py, MainLineField).
+2026-07-06 — libs/model_processing.py: ARRIVAL_TIME_ROLE, create_code_item, stamp_item, ensure_item_stamped, is_item_ready, count_ready_prefix (time.monotonic).
+2026-07-06 — docs/line_emulator/code_scheduler.md: документация CodeScheduler (тик 10 мс, PreciseTimer, start/stop API); обновлена docs/line_emulator/line_emulator.md.
+2026-07-06 | tests/test_libs/test_model_processing.py | Unit-тесты is_item_ready / count_ready_prefix: legacy-stamp, FIFO prefix, границы interval_ms
+2026-07-06 | libs/model_processing.py | Docstring: на границах узлов — stamp_item, не ensure_item_stamped
+2026-07-06 | libs/code_scheduler.py | CodeScheduler: PreciseTimer для стабильного 10 мс тика на Windows
+2026-07-06 | libs/code_scheduler.py | Добавлен CodeScheduler — обёртка QTimer с тиком 10 мс для per-code проверки готовности кодов

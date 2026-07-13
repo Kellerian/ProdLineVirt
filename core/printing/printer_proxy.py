@@ -53,3 +53,9 @@ class PrinterProxy(QObject):
             self._printer.remove(code)
         except AttributeError:
             pass
+
+    def clear_buffer(self) -> None:
+        """Clear the printer core buffer while the emulator is running."""
+        if self._printer is None:
+            return
+        self._printer.clear_buffer()

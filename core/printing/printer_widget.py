@@ -85,9 +85,11 @@ class PrinterWidget(QWidget, Ui_Form):
         self._data_list = data
         update_model_data(self.model_out, self._data_list)
 
-    def _clear_data(self):
+    def clear_data(self) -> None:
+        """Clear the displayed queue without stopping the emulator."""
         self._data_list.clear()
         self.model_out.clear()
+        self._printer.clear_buffer()
 
     def run(self, toggled: bool):
         if not self.leName.text() and not self.leConnetionStr.text():
@@ -107,7 +109,7 @@ class PrinterWidget(QWidget, Ui_Form):
             self._printer.set_buffer_size(self.spAmount.value())
         else:
             self._printer.stop()
-            self._clear_data()
+            self.clear_data()
 
     def options(self) -> PrinterConfig:
         return PrinterConfig(

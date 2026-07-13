@@ -44,6 +44,50 @@ QScrollBar:add-line {
 	height: 0px;	
 	padding: 0;
 	width: 0px;
+}
+
+QMenuBar {
+	background-color: #ffffff;
+	color: #17365D;
+}
+
+QMenuBar::item {
+	background-color: transparent;
+	color: #17365D;
+	padding: 2px 8px;
+}
+
+QMenuBar::item:selected {
+	background-color: #226091;
+	color: #f0b321;
+}
+
+QMenuBar::item:pressed {
+	background-color: #226091;
+	color: #f0b321;
+}
+
+QMenu {
+	background-color: #f5f5f5;
+	color: #17365D;
+	border: 1px solid #17365D;
+}
+
+QMenu::separator {
+	height: 1px;
+	background: #17365D;
+	margin: 4px 8px;
+}
+
+QMenu::item {
+	background-color: transparent;
+	color: #17365D;
+	padding: 4px 24px 4px 8px;
+}
+
+QMenu::item:selected {
+	background-color: #226091;
+	color: #f0b321;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -181,6 +225,7 @@ QScrollBar:add-line {
     </property>
     <addaction name="acAddCamera"/>
     <addaction name="acAddPrinter"/>
+    <addaction name="acAddScanner"/>
     <addaction name="separator"/>
     <addaction name="acAddTransporter"/>
     <addaction name="separator"/>
@@ -196,8 +241,50 @@ QScrollBar:add-line {
     <addaction name="separator"/>
     <addaction name="acClose"/>
    </widget>
+   <widget class="QMenu" name="menuControl">
+    <property name="title">
+     <string>Управление</string>
+    </property>
+    <widget class="QMenu" name="menuControlStart">
+     <property name="title">
+      <string>Запустить</string>
+     </property>
+     <addaction name="acControlStartAll"/>
+     <addaction name="acControlStartPrinters"/>
+     <addaction name="acControlStartCameras"/>
+     <addaction name="acControlStartScanners"/>
+     <addaction name="separator"/>
+     <addaction name="acControlStartTransporters"/>
+     <addaction name="acControlStartGenerators"/>
+    </widget>
+    <widget class="QMenu" name="menuControlStop">
+     <property name="title">
+      <string>Остановить</string>
+     </property>
+     <addaction name="acControlStopAll"/>
+     <addaction name="acControlStopPrinters"/>
+     <addaction name="acControlStopCameras"/>
+     <addaction name="acControlStopScanners"/>
+     <addaction name="separator"/>
+     <addaction name="acControlStopTransporters"/>
+     <addaction name="acControlStopGenerators"/>
+    </widget>
+    <widget class="QMenu" name="menuControlClear">
+     <property name="title">
+      <string>Очистить данные</string>
+     </property>
+     <addaction name="acControlClearAll"/>
+     <addaction name="acControlClearPrinters"/>
+     <addaction name="acControlClearCameras"/>
+     <addaction name="acControlClearScanners"/>
+    </widget>
+    <addaction name="menuControlStart"/>
+    <addaction name="menuControlStop"/>
+    <addaction name="menuControlClear"/>
+   </widget>
    <addaction name="menu_2"/>
    <addaction name="menu"/>
+   <addaction name="menuControl"/>
   </widget>
   <action name="acAddCamera">
    <property name="text">
@@ -207,6 +294,11 @@ QScrollBar:add-line {
   <action name="acAddPrinter">
    <property name="text">
     <string>Принтер</string>
+   </property>
+  </action>
+  <action name="acAddScanner">
+   <property name="text">
+    <string>Сканер</string>
    </property>
   </action>
   <action name="acAddTransporter">
@@ -237,6 +329,86 @@ QScrollBar:add-line {
   <action name="acAddGenerator">
    <property name="text">
     <string>Генератор</string>
+   </property>
+  </action>
+  <action name="acControlStartAll">
+   <property name="text">
+    <string>Всё</string>
+   </property>
+  </action>
+  <action name="acControlStartPrinters">
+   <property name="text">
+    <string>Принтеры</string>
+   </property>
+  </action>
+  <action name="acControlStartCameras">
+   <property name="text">
+    <string>Камеры</string>
+   </property>
+  </action>
+  <action name="acControlStartScanners">
+   <property name="text">
+    <string>Сканеры</string>
+   </property>
+  </action>
+  <action name="acControlStartTransporters">
+   <property name="text">
+    <string>Перевозчики</string>
+   </property>
+  </action>
+  <action name="acControlStartGenerators">
+   <property name="text">
+    <string>Генераторы</string>
+   </property>
+  </action>
+  <action name="acControlStopAll">
+   <property name="text">
+    <string>Всё</string>
+   </property>
+  </action>
+  <action name="acControlStopPrinters">
+   <property name="text">
+    <string>Принтеры</string>
+   </property>
+  </action>
+  <action name="acControlStopCameras">
+   <property name="text">
+    <string>Камеры</string>
+   </property>
+  </action>
+  <action name="acControlStopScanners">
+   <property name="text">
+    <string>Сканеры</string>
+   </property>
+  </action>
+  <action name="acControlStopTransporters">
+   <property name="text">
+    <string>Перевозчики</string>
+   </property>
+  </action>
+  <action name="acControlStopGenerators">
+   <property name="text">
+    <string>Генераторы</string>
+   </property>
+  </action>
+  <action name="acControlClearAll">
+   <property name="text">
+    <string>Всё</string>
+   </property>
+  </action>
+  <action name="acControlClearPrinters">
+   <property name="text">
+    <string>Принтеры</string>
+   </property>
+  </action>
+  <action name="acControlClearCameras">
+   <property name="text">
+    <string>Камеры</string>
+   </property>
+  </action>
+  <action name="acControlClearScanners">
+   <property name="text">
+    <string>Сканеры</string>
    </property>
   </action>
  </widget>

@@ -1,7 +1,10 @@
 from pathlib import Path
-from typing import Iterator
-from PySide6.QtWidgets import QFileDialog, QMainWindow
+from typing import Iterable, Iterator
 
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QWidget
+
+from core.barcode_scanner.data import ScannerConfig
+from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.generator.data import GeneratorConfig
 from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.data import ConfigFile
@@ -22,11 +25,14 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self._app_title = "Эмулятор производственной линии"
         self.setWindowIcon(get_icon())
-        self._device_widgets: dict[int, CameraWidget | PrinterWidget] = {}
+        self._device_widgets: dict[
+            int, CameraWidget | PrinterWidget | ScannerWidget
+        ] = {}
         self._transporter_widgets: dict[int, TransporterWidget] = {}
         self._generator_widgets: dict[int, GeneratorWidget] = {}
         self.cam_port = self.cam_port_generator()
         self.printer_port = self.printer_port_generator()
+        self.scanner_name = self.scanner_name_generator()
         self._devices_layout = FlowLayout(self.scaDevices)
         self.scaDevices.setLayout(self._devices_layout)
         self.setup_connections()
@@ -52,15 +58,180 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             yield printer_port
             printer_port += 1
 
+    @staticmethod
+    def scanner_name_generator(start: int = 1) -> Iterator[str]:
+        """Yield default scanner widget names (SCAN_1, SCAN_2, ...).
+
+        Args:
+            start: First numeric suffix to emit.
+        """
+        index = start
+        while True:
+            yield f"SCAN_{index}"
+            index += 1
+
+    def _sync_scanner_name_generator(self) -> None:
+        """Set default-name iterator past existing SCAN_N widgets."""
+        max_index = 0
+        for dev in self._device_widgets.values():
+            if not isinstance(dev, ScannerWidget):
+                continue
+            name = dev.name
+            if not name.startswith("SCAN_"):
+                continue
+            suffix = name[5:]
+            if suffix.isdigit():
+                max_index = max(max_index, int(suffix))
+        self.scanner_name = self.scanner_name_generator(max_index + 1)
+
     def setup_connections(self):
         self.acAddPrinter.triggered.connect(self._ac_add_printer)
         self.acAddCamera.triggered.connect(self._ac_add_camera)
+        self.acAddScanner.triggered.connect(self._ac_add_scanner)
         self.acAddTransporter.triggered.connect(self.add_transporter)
         self.acAddGenerator.triggered.connect(self.add_generator)
         self.acOpen.triggered.connect(self.open_config)
         self.acSave.triggered.connect(self.save_config)
         self.acSaveAs.triggered.connect(self.save_config_as)
         self.acClose.triggered.connect(self.close)
+        self._setup_bulk_control_connections()
+
+    def _setup_bulk_control_connections(self) -> None:
+        """Connect bulk start/stop/clear menu actions."""
+        self.acControlStartAll.triggered.connect(self._bulk_start_all)
+        self.acControlStartPrinters.triggered.connect(self._bulk_start_printers)
+        self.acControlStartCameras.triggered.connect(self._bulk_start_cameras)
+        self.acControlStartScanners.triggered.connect(self._bulk_start_scanners)
+        self.acControlStartTransporters.triggered.connect(
+            self._bulk_start_transporters
+        )
+        self.acControlStartGenerators.triggered.connect(
+            self._bulk_start_generators
+        )
+        self.acControlStopAll.triggered.connect(self._bulk_stop_all)
+        self.acControlStopPrinters.triggered.connect(self._bulk_stop_printers)
+        self.acControlStopCameras.triggered.connect(self._bulk_stop_cameras)
+        self.acControlStopScanners.triggered.connect(self._bulk_stop_scanners)
+        self.acControlStopTransporters.triggered.connect(
+            self._bulk_stop_transporters
+        )
+        self.acControlStopGenerators.triggered.connect(
+            self._bulk_stop_generators
+        )
+        self.acControlClearAll.triggered.connect(self._bulk_clear_all)
+        self.acControlClearPrinters.triggered.connect(self._bulk_clear_printers)
+        self.acControlClearCameras.triggered.connect(self._bulk_clear_cameras)
+        self.acControlClearScanners.triggered.connect(self._bulk_clear_scanners)
+
+    def _iter_printers(self) -> Iterator[PrinterWidget]:
+        """Yield printer widgets in layout order."""
+        for dev in self._device_widgets.values():
+            if isinstance(dev, PrinterWidget):
+                yield dev
+
+    def _iter_cameras(self) -> Iterator[CameraWidget]:
+        """Yield camera widgets in layout order."""
+        for dev in self._device_widgets.values():
+            if isinstance(dev, CameraWidget):
+                yield dev
+
+    def _iter_scanners(self) -> Iterator[ScannerWidget]:
+        """Yield scanner widgets in layout order."""
+        for dev in self._device_widgets.values():
+            if isinstance(dev, ScannerWidget):
+                yield dev
+
+    def _iter_devices(
+        self,
+    ) -> Iterator[CameraWidget | PrinterWidget | ScannerWidget]:
+        """Yield device widgets: printers, then cameras, then scanners."""
+        yield from self._iter_printers()
+        yield from self._iter_cameras()
+        yield from self._iter_scanners()
+
+    def _iter_transporters(self) -> Iterator[TransporterWidget]:
+        """Yield transporter widgets."""
+        yield from self._transporter_widgets.values()
+
+    def _iter_generators(self) -> Iterator[GeneratorWidget]:
+        """Yield generator widgets."""
+        yield from self._generator_widgets.values()
+
+    @staticmethod
+    def _start_widgets(widgets: Iterable[QWidget]) -> None:
+        """Start widgets whose Run toggle is currently off."""
+        for widget in widgets:
+            if not widget.tbRun.isChecked():
+                widget.tbRun.setChecked(True)
+
+    @staticmethod
+    def _stop_widgets(widgets: Iterable[QWidget]) -> None:
+        """Stop widgets whose Run toggle is currently on."""
+        for widget in widgets:
+            if widget.tbRun.isChecked():
+                widget.tbRun.setChecked(False)
+
+    @staticmethod
+    def _clear_device_widgets(
+        widgets: Iterable[CameraWidget | PrinterWidget | ScannerWidget],
+    ) -> None:
+        """Clear queue data on device widgets without stopping them."""
+        for widget in widgets:
+            widget.clear_data()
+
+    def _bulk_start_all(self) -> None:
+        """Start devices, then transporters, then generators."""
+        self._start_widgets(self._iter_devices())
+        self._start_widgets(self._iter_transporters())
+        self._start_widgets(self._iter_generators())
+
+    def _bulk_start_printers(self) -> None:
+        self._start_widgets(self._iter_printers())
+
+    def _bulk_start_cameras(self) -> None:
+        self._start_widgets(self._iter_cameras())
+
+    def _bulk_start_scanners(self) -> None:
+        self._start_widgets(self._iter_scanners())
+
+    def _bulk_start_transporters(self) -> None:
+        self._start_widgets(self._iter_transporters())
+
+    def _bulk_start_generators(self) -> None:
+        self._start_widgets(self._iter_generators())
+
+    def _bulk_stop_all(self) -> None:
+        """Stop generators, then transporters, then devices."""
+        self._stop_widgets(reversed(list(self._iter_generators())))
+        self._stop_widgets(reversed(list(self._iter_transporters())))
+        self._stop_widgets(reversed(list(self._iter_devices())))
+
+    def _bulk_stop_printers(self) -> None:
+        self._stop_widgets(self._iter_printers())
+
+    def _bulk_stop_cameras(self) -> None:
+        self._stop_widgets(self._iter_cameras())
+
+    def _bulk_stop_scanners(self) -> None:
+        self._stop_widgets(self._iter_scanners())
+
+    def _bulk_stop_transporters(self) -> None:
+        self._stop_widgets(self._iter_transporters())
+
+    def _bulk_stop_generators(self) -> None:
+        self._stop_widgets(self._iter_generators())
+
+    def _bulk_clear_all(self) -> None:
+        self._clear_device_widgets(self._iter_devices())
+
+    def _bulk_clear_printers(self) -> None:
+        self._clear_device_widgets(self._iter_printers())
+
+    def _bulk_clear_cameras(self) -> None:
+        self._clear_device_widgets(self._iter_cameras())
+
+    def _bulk_clear_scanners(self) -> None:
+        self._clear_device_widgets(self._iter_scanners())
 
     def _ac_add_printer(self):
         port = next(self.printer_port)
@@ -79,10 +250,30 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         name = f"CAM_{port}"
         self.add_camera(name, port)
 
-    def add_camera(self, name: str, port: int):
+    def add_camera(self, name: str, port: int) -> CameraWidget:
         cam_w = CameraWidget(name, port)
         self._add_device(cam_w)
         return cam_w
+
+    def _ac_add_scanner(self) -> None:
+        name = next(self.scanner_name)
+        self.add_scanner(name)
+
+    def add_scanner(
+        self, name: str, port_name: str = ""
+    ) -> ScannerWidget:
+        """Add a barcode scanner widget to the line field.
+
+        Args:
+            name: Display name of the scanner device.
+            port_name: Optional COM port to pre-select in the combo box.
+
+        Returns:
+            Created ``ScannerWidget`` instance.
+        """
+        scn_w = ScannerWidget(name, port_name)
+        self._add_device(scn_w)
+        return scn_w
 
     def add_transporter(self) -> TransporterWidget:
         transport = TransporterWidget()
@@ -124,6 +315,10 @@ class MainLineField(QMainWindow, Ui_MainWindow):
                 dev.options() for dev in self._device_widgets.values()
                 if isinstance(dev, CameraWidget)
             ],
+            scanners=[
+                dev.options() for dev in self._device_widgets.values()
+                if isinstance(dev, ScannerWidget)
+            ],
             transporters=[
                 dev.options() for dev in self._transporter_widgets.values()
             ],
@@ -149,6 +344,16 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             cam_w = self.add_camera(cam.name, cam.port)
             cam_w.load_options(cam.config)
             devices[cam_w.name] = id(cam_w)
+
+    def _load_scanners(
+        self, scanners: list[ScannerConfig], devices: dict[str, int]
+    ) -> None:
+        """Restore scanner widgets from saved configuration."""
+        for scn in scanners:
+            scn_w = self.add_scanner(scn.name, scn.port_name)
+            scn_w.load_options(scn.config)
+            devices[scn_w.name] = id(scn_w)
+        self._sync_scanner_name_generator()
 
     def _load_transporters(
         self, transporters:  list[TransporterConfig], devices: dict[str, int]
@@ -179,6 +384,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         devices: dict[str, int] = {}
         self._load_printers(config.printers, devices)
         self._load_cameras(config.cameras, devices)
+        self._load_scanners(config.scanners, devices)
         self._load_transporters(config.transporters, devices)
         self._load_generator(config.generators, devices)
 
@@ -193,6 +399,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             trn.setParent(None)
             trn.run(False)
             trn.deleteLater()
+        self._sync_scanner_name_generator()
 
     def open_config(self):
         file_data = QFileDialog.getOpenFileName(
@@ -219,11 +426,15 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._generator_widgets[id(generator)] = generator
         self.transporters_layout.addWidget(generator)
 
-    def _add_device(self, device: CameraWidget | PrinterWidget):
+    def _add_device(
+        self, device: CameraWidget | PrinterWidget | ScannerWidget
+    ) -> None:
         self._device_widgets[id(device)] = device
         self._devices_layout.addWidget(device)
         for twd in self._transporter_widgets.values():
             twd.setup_models(self._device_widgets)
+        for gwd in self._generator_widgets.values():
+            gwd.setup_models(self._device_widgets)
 
     def closeEvent(self, a0):
         for twd in self._transporter_widgets.values():

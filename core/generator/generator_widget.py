@@ -1,15 +1,20 @@
+import time
 from logging import getLogger
-from PySide6.QtCore import QTimer, Slot
+
+from PySide6.QtCore import Slot
 from PySide6.QtGui import QStandardItem, QStandardItemModel, Qt
 from PySide6.QtWidgets import QComboBox, QWidget
 
+from core.generator.data import CodeType, GeneratorConfig
 from core.generator.generators import get_new_code
+from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
-from core.generator.data import CodeType, GeneratorConfig
 from forms.Generator import Ui_Form
-from libs.loggers import UI_LOGGER
 from libs.code_cleanup import get_clean_code
+from libs.code_scheduler import CodeScheduler
+from libs.loggers import UI_LOGGER
+from libs.model_processing import create_code_item
 
 
 class GeneratorWidget(QWidget, Ui_Form):
@@ -19,8 +24,9 @@ class GeneratorWidget(QWidget, Ui_Form):
         self._log = getLogger(UI_LOGGER)
         self.name = f"GW_{id(self)}"
         self._setup_icon(self.tbRun.isChecked())
-        self._timer_sender = QTimer()
-        self._device_data: dict[int, CameraWidget | PrinterWidget] = {}
+        self._scheduler = CodeScheduler()
+        self._last_generated_at: float | None = None
+        self._device_data: dict[int, CameraWidget | PrinterWidget | ScannerWidget] = {}
         self.model_out: QStandardItemModel | None = None
         self.code_type: CodeType = CodeType.UKZ
         self.gtin: str = self.leGtin.text().strip()
@@ -38,7 +44,6 @@ class GeneratorWidget(QWidget, Ui_Form):
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.start)
         self.spInterval.valueChanged.connect(self.set_interval_settings)
-        self._timer_sender.timeout.connect(self.send_data)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxCodeType.currentIndexChanged.connect(self.set_code_type)
 
@@ -53,7 +58,7 @@ class GeneratorWidget(QWidget, Ui_Form):
 
     def _get_model_current_widget(
         self, cbx: QComboBox, idx: int
-    ) -> CameraWidget | PrinterWidget | None:
+    ) -> CameraWidget | PrinterWidget | ScannerWidget | None:
         model = cbx.model()
         index = model.index(idx, 1)
         data = model.data(index, Qt.ItemDataRole.DisplayRole)
@@ -67,6 +72,9 @@ class GeneratorWidget(QWidget, Ui_Form):
         if idx is None:
             idx = self.cbxTo.currentIndex()
         widget = self._get_model_current_widget(self.cbxTo, idx)
+        if widget is None:
+            self._log.warning(f"Не выбран приёмник: idx={idx}")
+            return
         self.model_out = widget.model_in
         self._log.info(f"ПЕРЕДАЁМ В {widget.name}")
 
@@ -112,7 +120,7 @@ class GeneratorWidget(QWidget, Ui_Form):
         for device in self._device_data.values():
             dev_name = device.name
             dev_id = id(device)
-            if isinstance(device, CameraWidget):
+            if isinstance(device, (CameraWidget, ScannerWidget)):
                 to_model.appendRow(
                     [QStandardItem(dev_name), QStandardItem(str(dev_id))]
                 )
@@ -127,7 +135,7 @@ class GeneratorWidget(QWidget, Ui_Form):
         cbx.blockSignals(False)
 
     def setup_models(
-        self, device_widgets: dict[int, CameraWidget | PrinterWidget]
+        self, device_widgets: dict[int, CameraWidget | PrinterWidget | ScannerWidget]
     ):
         if self.tbRun.isChecked():
             return
@@ -143,26 +151,38 @@ class GeneratorWidget(QWidget, Ui_Form):
 
     def start(self, toggled: bool):
         self.gtin = self.leGtin.text().strip()
-        self._timer_sender.setInterval(self.spInterval.value())
         self._setup_icon(toggled)
         self.run(toggled)
 
-    def set_interval_settings(self, value: int):
-        self._timer_sender.setInterval(value)
+    def set_interval_settings(self, value: int) -> None:
+        """Interval is read dynamically in :meth:`send_data`; no timer update."""
+        del value
 
-    def send_data(self):
-        _c = get_new_code(self.gtin, self.code_type)
-        row = QStandardItem(get_clean_code(_c))
-        self.model_out.appendRow(row)
+    def send_data(self) -> None:
+        """Append a new code when ``spInterval`` has elapsed since the last one."""
+        if self.model_out is None:
+            self._log.warning(f"Не задан приёмник: OUT:{self.model_out}")
+            return
+        interval_ms = self.spInterval.value()
+        now = time.monotonic()
+        if self._last_generated_at is not None:
+            elapsed_ms = (now - self._last_generated_at) * 1000.0
+            if elapsed_ms < interval_ms:
+                return
+        code = get_new_code(self.gtin, self.code_type)
+        self.model_out.appendRow(create_code_item(get_clean_code(code)))
+        self._last_generated_at = now
 
-    def run(self, toggled: bool):
+    def run(self, toggled: bool) -> None:
+        """Start or stop per-code generation polling."""
         if toggled:
             self._log.info(f"ГЕНЕРАТОР СТАРТ")
             self.set_to_model()
-            self._timer_sender.start()
+            self._scheduler.start(self.send_data)
         else:
             self._log.info(f"ГЕНЕРАТОР ОСТАНОВКА")
-            self._timer_sender.stop()
+            self._scheduler.stop()
+            self._last_generated_at = None
         self.cbxTo.setDisabled(toggled)
 
     def options(self) -> GeneratorConfig:

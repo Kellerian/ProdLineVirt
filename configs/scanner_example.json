@@ -1,0 +1,46 @@
+{
+    "scanners": [
+        {
+            "name": "SCAN_1",
+            "port_name": "COM5",
+            "config": {
+                "baud_rate": 9600,
+                "bytesize": 8,
+                "parity": "N",
+                "stopbits": 1,
+                "suffix": "\r\n"
+            }
+        }
+    ],
+    "generators": [
+        {
+            "generator_type": "KM_01_14_21_13_93_4",
+            "gtin": "07665585002196",
+            "give_to": "SCAN_1",
+            "interval": 500
+        }
+    ],
+    "transporters": [
+        {
+            "take_from": "SCAN_1",
+            "give_to": "CAM_23",
+            "interval": 250
+        }
+    ],
+    "cameras": [
+        {
+            "name": "CAM_23",
+            "port": 23,
+            "config": {
+                "packet_size": 1,
+                "interval": 150,
+                "gen_no_read": false,
+                "no_read_perc": 0,
+                "gen_duplicates": false,
+                "duplicates_perc": 0,
+                "gen_grade": false,
+                "grade_perc": 0
+            }
+        }
+    ]
+}

@@ -143,3 +143,8 @@ class CameraEmul:
             data_list.append(self._sent.pop())
 
         return data_list
+
+    def clear_queues(self) -> None:
+        """Clear pending and already-sent code queues."""
+        self._to_send.clear()
+        self._sent.clear()

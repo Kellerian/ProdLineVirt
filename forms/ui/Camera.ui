@@ -116,12 +116,26 @@ QComboBox::down-arrow:on {
     left: 1px;
 }
 
-QComboBox QListView {
+QComboBox QAbstractItemView {
     selection-background-color: #f0b321;
 	selection-color: #19466a;
 	color: #f0b321;
 	background-color: #19466a;
 	border: 2px solid #f0b321;
+}
+
+QComboBox::item {
+	color: #f0b321;
+	background-color: #19466a;
+}
+
+QComboBox::item:hover {
+	background-color: #226091;
+}
+
+QComboBox::item:selected {
+	background-color: #f0b321;
+	color: #19466a;
 }
 
 QComboBox QToolTip {

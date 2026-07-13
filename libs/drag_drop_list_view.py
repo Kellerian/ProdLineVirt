@@ -1,6 +1,8 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QListView
+
+from libs.model_processing import create_code_item
 
 
 class DropListView(QListView):
@@ -18,7 +20,7 @@ class DropListView(QListView):
     def dropEvent(self, event):
         if event.mimeData().hasText():
             event.setDropAction(Qt.DropAction.CopyAction)
-            self.model().appendRow(QStandardItem(event.mimeData().text()))
+            self.model().appendRow(create_code_item(event.mimeData().text()))
             event.accept()
         else:
             event.ignore()

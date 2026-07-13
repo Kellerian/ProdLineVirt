@@ -59,3 +59,9 @@ class CameraProxy(QObject):
         if not sent_data:
             return
         self.scanned.emit(sent_data)
+
+    def clear_queues(self) -> None:
+        """Clear pending and sent queues in the camera core."""
+        if self._camera is None:
+            return
+        self._camera.clear_queues()

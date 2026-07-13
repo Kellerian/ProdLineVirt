@@ -2,16 +2,35 @@
 from pylibdmtx import pylibdmtx
 from pathlib import Path
 
+import qtawesome
+
 
 block_cipher = None
+
+_qtawesome_fonts = (
+    str(Path(qtawesome.__file__).parent / 'fonts'),
+    'qtawesome/fonts',
+)
 
 
 a = Analysis(
     ['..\\..\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[('..\\..\\media\\logo.ico', 'media')],
-    hiddenimports=['pylibdmtx', 'psycopg', 'psycopg_c'],
+    datas=[
+        ('..\\..\\media\\logo.ico', 'media'),
+        _qtawesome_fonts,
+    ],
+    hiddenimports=[
+        'pylibdmtx',
+        'psycopg',
+        'psycopg_c',
+        'shortuuid',
+        'serial',
+        'serial.tools.list_ports',
+        'qtawesome',
+        'qtawesome.iconic_font',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
