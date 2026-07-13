@@ -1,6 +1,6 @@
-from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtGui import QStandardItemModel
-from PySide6.QtWidgets import QLabel, QListView, QWidget
+from PySide6.QtWidgets import QLabel, QListView, QMessageBox, QWidget
 from core.scanning.camera_proxy import CameraProxy
 from core.scanning.data import CameraConfig, CameraParams
 from forms.Camera import Ui_Form
@@ -15,6 +15,10 @@ from libs.model_processing import (
 
 
 class CameraWidget(QWidget, Ui_Form):
+    """Виджет эмулятора камеры на холсте Line Emulator."""
+
+    delete_requested = Signal()
+
     def __init__(self, name: str, port: int):
         super().__init__()
         self.setupUi(self)
@@ -74,6 +78,7 @@ class CameraWidget(QWidget, Ui_Form):
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
+        self.tbDelete.clicked.connect(self._on_delete_clicked)
 
         self.cbxNoRead.toggled.connect(self.set_no_read_settings)
         self.spNoReadPercent.valueChanged.connect(self.set_no_read_settings)
@@ -88,6 +93,24 @@ class CameraWidget(QWidget, Ui_Form):
 
         self.btnSendError.clicked.connect(self._send_error)
         self.tbCoords.toggled.connect(self.set_coords_option)
+
+    def _on_delete_clicked(self) -> None:
+        """Запрашивает подтверждение удаления; эмитит сигнал, если виджет остановлен."""
+        if self.tbRun.isChecked():
+            QMessageBox.warning(
+                self,
+                "Удаление",
+                "Остановите виджет перед удалением",
+            )
+            return
+        name = self.leName.text().strip() or self.name
+        reply = QMessageBox.question(
+            self,
+            "Удаление",
+            f"Удалить виджет «{name}»?",
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.delete_requested.emit()
 
     def _send_error(self):
         self.model_in.appendRow(create_code_item('error'))

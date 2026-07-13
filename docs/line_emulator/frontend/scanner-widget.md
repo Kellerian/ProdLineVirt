@@ -76,7 +76,8 @@ sequenceDiagram
 
 | Компонент / поле | Роль |
 |------------------|------|
-| `Ui_Form` (`forms/Scanner.py`) | Макет: имя, COM combo, Run/Stop, ручной ввод, список очереди |
+| `Ui_Form` (`forms/Scanner.py`) | Макет: имя, COM combo, `tbRefreshPorts`, Run/Stop, `tbDelete`, ручной ввод, список очереди |
+| `delete_requested` | `Signal()` без аргументов — запрос удаления после подтверждения в `_on_delete_clicked` |
 | `_scanner` | `ScannerProxy` — мост в UI-поток, сигналы `scanned`, `open_failed` |
 | `_scheduler` | `CodeScheduler` — периодический вызов `send_data` |
 | `_params` | `ScannerParams` — параметры линии COM (baud, parity, suffix); задаётся `load_options` |
@@ -108,6 +109,8 @@ sequenceDiagram
 |------------|------------|-----------|
 | `btnSend` | `_send_manual_input` | Добавляет trimmed-текст из `leManualInput` в `model_in`, очищает поле |
 | `leManualInput` | `returnPressed` → `_send_manual_input` | То же по Enter |
+| `tbRefreshPorts` | `_on_refresh_ports_clicked` | Перечитывает COM через `_refresh_com_ports` (см. ниже) |
+| `tbDelete` | `_on_delete_clicked` | Running → warning без emit; stopped + Yes → `delete_requested.emit()` (см. ниже) |
 
 Иконка кнопки отправки (`_setup_send_icon`):
 
@@ -118,6 +121,8 @@ self.btnSend.setText("")
 ```
 
 Текст «▶» из `.ui` заменяется иконкой Font Awesome 5 Solid; tooltip «Отправить» остаётся из формы.
+
+Иконка обновления портов (`_setup_refresh_ports_icon`): `qta.icon("fa5s.sync", color="#FFFFFF")` — текст «↻» из `.ui` очищается; tooltip «Обновить список COM-портов» остаётся из формы.
 
 ## CodeScheduler
 
@@ -135,6 +140,18 @@ Callback `send_data`:
 - при пустой очереди или недостаточном `ready_count` — выход;
 - иначе снимает до `_SEND_BATCH_SIZE` кодов и передаёт в прокси.
 
+## Запрос удаления (`tbDelete` / `delete_requested`)
+
+План widget-delete-com-refresh, подзадача **#2**. Тот же UX на Printer / Camera / Transporter / Generator — [widget-delete.md](widget-delete.md).
+
+`_on_delete_clicked()`:
+
+1. Если `tbRun.isChecked()` — `QMessageBox.warning` («Остановите виджет перед удалением»), **без** `emit`.
+2. Иначе `QMessageBox.question` с именем `leName.text().strip() or self.name`.
+3. При Yes — `self.delete_requested.emit()` (сигнал без аргументов; sender — виджет).
+
+`MainLineField` подключает `delete_requested` → `_remove_device` (снятие с холста, `setup_models` у transporters/generators, `_sync_scanner_name_generator`). Подробности — [widget-delete.md](widget-delete.md).
+
 ## Run / Stop (`tbRun`)
 
 ### Валидация при включении
@@ -149,9 +166,9 @@ Callback `send_data`:
 
 ### Успешный запуск
 
-1. Блокируются `leName` и `cbxComPort`.
+1. Блокируются `leName`, `cbxComPort` и `tbRefreshPorts`.
 2. `ScannerConfig(...).to_serial_port_config()` → `SerialPortConfig`.
-3. Синхронная проба `open_serial_port` + `close` в `_verify_port_available`.
+3. Синхронная проба `open_serial_port` + `close` в `_verify_port_available` (при отказе поля и refresh снова включаются).
 4. `_scanner.start(self.name, config)`.
 5. `_scheduler.start(self.send_data)`.
 6. Лог INFO: сканер запущен на выбранном порту.
@@ -160,7 +177,8 @@ Callback `send_data`:
 
 1. `_scheduler.stop()`, `_scanner.stop()`.
 2. `clear_data()` — очистка UI-очередей и ядра.
-3. Лог INFO: сканер остановлен.
+3. Поля имени, COM и `tbRefreshPorts` снова доступны.
+4. Лог INFO: сканер остановлен.
 
 ### Индикация R / S (`_setup_icon`)
 
@@ -169,7 +187,14 @@ Callback `send_data`:
 | выключен (Run) | `R` | `#00FF00` |
 | включён (Stop) | `S` | `#FF0000` |
 
-## COM-порт (`cbxComPort`)
+## COM-порт (`cbxComPort`) и обновление списка
+
+Список портов заполняется при создании виджета и по клику **`tbRefreshPorts`** (между combo и Run).
+
+`_on_refresh_ports_clicked()`:
+
+1. Берёт текущий выбор: `select_port = self._get_port_name() or None` (пустой выбор → `None`, остаётся placeholder).
+2. Вызывает `_refresh_com_ports(select_port=...)`.
 
 `_refresh_com_ports(select_port=None)`:
 
@@ -178,6 +203,8 @@ Callback `send_data`:
 3. При `select_port`: выбирает существующий индекс или добавляет порт в список (для сохранённого в JSON имени, которого сейчас нет в системе).
 
 `_get_port_name()` возвращает `""`, если выбран placeholder (индекс 0).
+
+При `run(True)` кнопка `tbRefreshPorts` отключается вместе с `cbxComPort` (и снова включается при stop / ошибке открытия порта). Unit-тесты: `tests/test_core/test_scanner_com_refresh.py`.
 
 ## Исходящая очередь `model_out`
 
@@ -198,7 +225,7 @@ Callback `send_data`:
 
 1. Останавливает планировщик и прокси.
 2. Сбрасывает `tbRun` с `blockSignals`.
-3. Включает `leName` и `cbxComPort`.
+3. Включает `leName`, `cbxComPort` и `tbRefreshPorts`.
 4. Обновляет иконку на «R».
 5. Показывает `QMessageBox.warning` с именем порта и текстом ошибки.
 6. Пишет ERROR в `UI_LOGGER`.
@@ -282,7 +309,7 @@ def options(self) -> ScannerConfig:
 | Аспект | CameraWidget | ScannerWidget |
 |--------|--------------|---------------|
 | Транспорт | TCP (`CameraProxy`) | COM (`ScannerProxy`) |
-| Подключение в UI | `leConnetionStr` (порт) | `cbxComPort` |
+| Подключение в UI | `leConnetionStr` (порт) | `cbxComPort` + `tbRefreshPorts` |
 | Per-code интервал | `spInterval` (динамический) | `_SEND_INTERVAL_MS = 0` |
 | Размер пакета | `spSize` | `_SEND_BATCH_SIZE = 1` |
 | `lstData` DnD | Drop + processed drag out | DropOnly (приёмник) |
@@ -290,8 +317,9 @@ def options(self) -> ScannerConfig:
 | Ошибка подключения | — | sync + `open_failed` / QMessageBox |
 | `clear_data` | `_clear_data` (private) | `clear_data()` (public) |
 | Иконка send | текст кнопки | QtAwesome `fa5s.paper-plane` |
+| Обновление портов | — | `tbRefreshPorts` → `_refresh_com_ports` (`fa5s.sync`) |
 
-## Граница ответственности (#4–#6)
+## Граница ответственности (#4–#6, COM refresh)
 
 **Реализовано в `scanner_widget.py` и `MainLineField`:**
 
@@ -299,22 +327,31 @@ def options(self) -> ScannerConfig:
 - `CodeScheduler` + `send_data` с FIFO и batch=1.
 - Ручной ввод, иконка QtAwesome на `btnSend`.
 - Заполнение COM combo, Run/Stop, валидация имени и порта.
+- Кнопка `tbRefreshPorts`: повторное `_refresh_com_ports` с сохранением выбора; disabled при Run (план widget-delete-com-refresh, **#1**).
+- Кнопка `tbDelete` и сигнал `delete_requested` (running → warning; stopped + Yes → emit) — план widget-delete-com-refresh, **#2**.
+- Remove API в `MainLineField`: `_remove_device` после `delete_requested`, `setup_models` / `_sync_scanner_name_generator` — **#3**.
+- Unit-тесты Remove API / guards / `clear_ui` → generators — **#4** (`tests/test_core/test_widget_delete.py`).
 - `clear_data()`, `options()`, `load_options()`.
 - Обработка занятого/недоступного COM: `_verify_port_available`, `open_failed`.
 - Участие в combo transport/generator, контракт `model_in` / `model_out` для pipeline (#6).
 - Пункт меню «Добавить → Сканер» (`acAddScanner`), save/load секции `scanners`, `closeEvent` → `run(False)`, `_sync_scanner_name_generator`, `setup_models` при `_add_device` (#5) — см. [line_emulator.md](../line_emulator.md), раздел «Интеграция сканера в главное окно».
 
-**Не входит (следующие подзадачи):**
+**Вне текущего плана (не блокер widget-delete-com-refresh):**
 
-| Поведение | Подзадача |
-|-----------|-----------|
-| Редактирование `ScannerParams` в UI | вне текущего плана |
-| Пользовательские инструкции, `WHATSNEW.md` | #9 / `user-doc-writer` |
+| Поведение | Примечание |
+|-----------|------------|
+| Редактирование `ScannerParams` в UI | значения по умолчанию из модели (#2); расширение формы — отдельно |
+| `WHATSNEW.md` / финальные user-guides оркестратора | `user-doc-writer` после закрытия всех подзадач плана |
+
+Unit-тесты Remove API / регрессии `clear_ui` (widget-delete-com-refresh **#4**) — см. раздел «Unit-тесты» в [widget-delete.md](widget-delete.md). Сверка docs по плану — **#5** (этот набор файлов).
 
 ## Связанная документация
 
-- [scanner-ui.md](scanner-ui.md) — статический макет `Scanner.ui` (подзадача #3).
+- [scanner-ui.md](scanner-ui.md) — статический макет `Scanner.ui` (подзадача #3), включая `tbRefreshPorts` и `tbDelete`.
+- [widget-delete.md](widget-delete.md) — `tbDelete` / `delete_requested`, Remove API (#2–#3), unit-тесты (#4), docs (#5).
 - [scanner_serial.md](../scanner_serial.md) — `ScannerEmul`, `ScannerProxy`, `libs/serial_port` (подзадача #1).
 - [code_scheduler.md](../code_scheduler.md) — тик 10 мс, интеграция в виджеты линии.
 - [model_processing_timing.md](../model_processing_timing.md) — `create_code_item`, `count_ready_prefix`, `stamp_item`.
-- [line_emulator.md](../line_emulator.md) — `ScannerConfig` / `ScannerParams` в JSON (#2); wiring transport/generator (#6).
+- [line_emulator.md](../line_emulator.md) — `ScannerConfig` / `ScannerParams` в JSON (#2); wiring transport/generator (#6); удаление виджетов с холста; COM refresh.
+- [user-guides/scanner-widget.md](../user-guides/scanner-widget.md) — COM refresh и удаление сканера.
+- [user-guides/widget-delete.md](../user-guides/widget-delete.md) — удаление любого виджета.

@@ -90,6 +90,20 @@ flowchart LR
 
 Вспомогательные фабрики: `_make_scanner()` (mock COM list + icon), `_make_printer()`.
 
+### `tests/test_core/test_scanner_com_refresh.py` (3 теста)
+
+Класс `TestScannerComRefresh` — кнопка `tbRefreshPorts` (план widget-delete-com-refresh, подзадача **#1**). Требует `QApplication`; мокирует `list_available_ports` и `qta.icon`.
+
+| Тест | Сценарий |
+|------|----------|
+| `test_refresh_updates_combo_and_keeps_selection` | Клик refresh перечитывает порты и сохраняет текущий выбор, если порт ещё в списке |
+| `test_refresh_without_selection_keeps_placeholder` | Без выбранного порта после refresh остаётся placeholder (индекс 0) |
+| `test_refresh_disabled_while_running` | При `run(True)` `tbRefreshPorts` disabled вместе с `cbxComPort`; после `run(False)` снова enabled |
+
+```powershell
+.\venv\Scripts\python.exe -m unittest tests.test_core.test_scanner_com_refresh -v
+```
+
 ## Запуск
 
 Все тесты подзадачи #8 одной командой:
@@ -118,6 +132,8 @@ flowchart LR
 | Модуль | План | Примечание |
 |--------|------|------------|
 | `tests/test_core/test_bulk_control.py` | **#10** | Массовое управление виджетами (`MainLineField`) |
+| `tests/test_core/test_scanner_com_refresh.py` | widget-delete-com-refresh **#1** | См. раздел выше — COM refresh UI |
+| `tests/test_core/test_widget_delete.py` | widget-delete-com-refresh **#4** | Remove API, guards `_on_delete_clicked`, `clear_ui` → generators — [frontend/widget-delete.md](frontend/widget-delete.md) |
 | UI `ScannerWidget` (DnD, Run, QMessageBox) | — | Отдельные интеграционные/ручные сценарии; COM — через [com0com_setup.md](com0com_setup.md) |
 | `ScannerProxy` (QTimer 250 мс) | — | Покрывается косвенно через `ScannerEmul`; прямых unit-тестов прокси нет |
 

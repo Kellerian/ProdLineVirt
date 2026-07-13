@@ -3,7 +3,7 @@
 | Параметр | Значение |
 |----------|----------|
 | Точка входа | `main.py` |
-| Версия | `client_info.VERSION` (например `1.0.0.1.b0002`) |
+| Версия | `client_info.VERSION` (например `1.0.0.1.b0005`) |
 | Главное окно | `core/main_ui/line_emul.py` → `MainLineField` |
 | UI-форма | `forms/Main.py` → `Ui_MainWindow` |
 | Конфигурация | JSON через `core/main_ui/data.py` → `ConfigFile` |
@@ -38,11 +38,11 @@ flowchart TB
 
 | Модуль | Роль |
 |--------|------|
-| `core/scanning/camera_widget.py` | Очередь отправки (`model_in`), результаты (`model_out`); `CodeScheduler` + per-code batch (`spInterval`, `spSize`) |
-| `core/barcode_scanner/scanner_widget.py` | Очередь отправки (`model_in`), подтверждённые коды (`model_out`); `CodeScheduler` + COM через `ScannerProxy` |
-| `core/transporting/transporter_widget.py` | Перенос кодов между связанными виджетами (`cbxFrom` → `model_out` источника, `cbxTo` → `model_in` приёмника); источник — камера/принтер/сканер, приёмник — камера/сканер; `CodeScheduler` + per-code FIFO |
-| `core/generator/generator_widget.py` | Генерация кодов в `model_in` камеры или сканера (`cbxTo`); `CodeScheduler` + `_last_generated_at` (~`spInterval` между генерациями), `create_code_item` |
-| `core/printing/printer_widget.py` | Отображение буфера принтера (сокет) |
+| `core/scanning/camera_widget.py` | Очередь отправки (`model_in`), результаты (`model_out`); `CodeScheduler` + per-code batch (`spInterval`, `spSize`); `tbDelete` / `delete_requested` |
+| `core/barcode_scanner/scanner_widget.py` | Очередь отправки (`model_in`), подтверждённые коды (`model_out`); `CodeScheduler` + COM через `ScannerProxy`; `tbRefreshPorts` — повторное `_refresh_com_ports`; `tbDelete` / `delete_requested` |
+| `core/transporting/transporter_widget.py` | Перенос кодов между связанными виджетами (`cbxFrom` → `model_out` источника, `cbxTo` → `model_in` приёмника); источник — камера/принтер/сканер, приёмник — камера/сканер; `CodeScheduler` + per-code FIFO; `tbDelete` / `delete_requested` |
+| `core/generator/generator_widget.py` | Генерация кодов в `model_in` камеры или сканера (`cbxTo`); `CodeScheduler` + `_last_generated_at` (~`spInterval` между генерациями), `create_code_item`; `tbDelete` / `delete_requested` |
+| `core/printing/printer_widget.py` | Отображение буфера принтера (сокет); `tbDelete` / `delete_requested` |
 | `core/barcode_scanner/scanner_core.py` | Эмулятор сканера ШК: очередь кодов, запись в COM (фоновый поток) |
 | `core/barcode_scanner/scanner_proxy.py` | Qt-мост: `Signal scanned`, опрос ядра 250 мс |
 | `libs/serial_port.py` | pyserial: перечисление портов, `SerialPortConfig`, open/write с суффиксом `\r\n` |
@@ -211,11 +211,27 @@ def add_scanner(self, name: str, port_name: str = "") -> ScannerWidget:
 
 `options()` / `load_options()` описаны в [frontend/scanner-widget.md](frontend/scanner-widget.md).
 
-### Остановка при закрытии (`closeEvent`)
+### Остановка при закрытии (`closeEvent`) и очистка (`clear_ui`)
 
-При закрытии главного окна `closeEvent` вызывает `run(False)` для всех перевозчиков и всех устройств на холсте (камеры, принтеры, **сканеры**). Это останавливает `CodeScheduler`, закрывает COM через `ScannerProxy` / `ScannerEmul` и снимает флаг Run в UI.
+При закрытии главного окна `closeEvent` вызывает `run(False)` для **перевозчиков**, **генераторов** и всех устройств на холсте (камеры, принтеры, **сканеры**). Это останавливает `CodeScheduler`, закрывает COM через `ScannerProxy` / `ScannerEmul` и снимает флаг Run в UI.
 
-`clear_ui` (перед загрузкой другого JSON) дополнительно удаляет виджеты с холста (`deleteLater`) и снова синхронизирует `scanner_name`.
+`clear_ui` (перед загрузкой другого JSON) останавливает и удаляет (`setParent(None)` + `deleteLater`) виджеты из `_device_widgets`, `_transporter_widgets` и **`_generator_widgets`**, затем снова синхронизирует `scanner_name` через `_sync_scanner_name_generator()`.
+
+## Удаление виджета (`tbDelete` + Remove API, #2–#4)
+
+План widget-delete-com-refresh (docs — **#5**). На всех пяти виджетах (Printer, Camera, Scanner, Transporter, Generator):
+
+| Элемент | Описание |
+|---------|----------|
+| `tbDelete` | `QToolButton` 28×28, текст «X», tooltip «Удалить», сразу после `tbRun` в шапке формы |
+| `delete_requested` | `Signal()` без аргументов |
+| `_on_delete_clicked` | если `tbRun` включён → `QMessageBox.warning` без emit; иначе `question` → при Yes — `emit` |
+
+Имя в диалоге: у устройств — `leName` (fallback `self.name`); у перевозчика/генератора — `self.name`.
+
+`MainLineField` при `_add_*` подключает `delete_requested` → `_on_widget_delete_requested` → `_remove_device` / `_remove_transporter` / `_remove_generator` (pop из реестра, `run(False)`, `deleteLater`). После удаления device — `setup_models(self._device_widgets)` у всех transporters/generators; при удалении `ScannerWidget` — `_sync_scanner_name_generator()`.
+
+Подробности — [frontend/widget-delete.md](frontend/widget-delete.md), шаги оператора — [user-guides/widget-delete.md](user-guides/widget-delete.md).
 
 ## Связь виджетов: Transport и Generator (#6)
 
@@ -254,12 +270,13 @@ flowchart LR
 
 ### Обновление списков (`setup_models`)
 
-`MainLineField` передаёт в `setup_models(device_widgets)` словарь `{id(widget): widget}` всех устройств на холсте. Виджет обновляет `_device_data` и перестраивает модели combo:
+`MainLineField` передаёт в `setup_models(device_widgets)` словарь `{id(widget): widget}` всех устройств на холсте (в т.ч. после `_add_device` и `_remove_device`).
 
-- **Транспортёр** — `get_data_models()` → `from_model` (все устройства), `to_model` (только `CameraWidget` и `ScannerWidget`).
-- **Генератор** — `get_data_models()` → `to_model` (только `CameraWidget` и `ScannerWidget`).
-
-Пока транспортёр или генератор в состоянии Run (`tbRun` включён), `setup_models` не меняет combo (защита от смены маршрута во время работы).
+1. Виджет **всегда** выполняет полную замену: `_device_data = dict(device_widgets)` (не `update`) — удалённые id не остаются в реестре.
+2. Если `tbRun` включён — return **без** пересборки combo (защита от смены маршрута во время работы).
+3. Если остановлен — перестраивает модели combo:
+   - **Транспортёр** — `get_data_models()` → `from_model` (все устройства), `to_model` (только `CameraWidget` и `ScannerWidget`).
+   - **Генератор** — `get_data_models()` → `to_model` (только `CameraWidget` и `ScannerWidget`).
 
 ### Null guards
 
@@ -318,7 +335,7 @@ flowchart LR
 |---------|------------|
 | Точка входа | `main.py` |
 | Имя exe | `dmcLineEmulator` |
-| `hiddenimports` | `serial`, `serial.tools.list_ports` — перечисление и открытие COM (`libs/serial_port`); `qtawesome`, `qtawesome.iconic_font` — иконка кнопки Send в `ScannerWidget` |
+| `hiddenimports` | `serial`, `serial.tools.list_ports` — перечисление и открытие COM (`libs/serial_port`); `qtawesome`, `qtawesome.iconic_font` — иконки `btnSend` и `tbRefreshPorts` в `ScannerWidget` |
 | `datas` | Каталог шрифтов QtAwesome (`qtawesome/fonts`) — без него иконки в frozen-сборке не отображаются |
 | Прочие `hiddenimports` | `pylibdmtx`, `psycopg`, `shortuuid` — уже использовались эмулятором до сканера |
 
@@ -327,13 +344,13 @@ flowchart LR
 | Пакет | Версия | Где используется |
 |-------|--------|------------------|
 | `pyserial` | `3.5` | `libs/serial_port.py`, ядро `ScannerEmul` |
-| `QtAwesome` | `1.3.1` | `core/barcode_scanner/scanner_widget.py` (`btnSend`) |
+| `QtAwesome` | `1.3.1` | `core/barcode_scanner/scanner_widget.py` (`btnSend`, `tbRefreshPorts`) |
 
 PyInstaller не всегда подхватывает подмодули `serial.tools.list_ports` и ресурсы QtAwesome статическим анализом — поэтому они указаны явно в `hiddenimports` и `datas`.
 
 ### Версия приложения
 
-Номер сборки — `client_info.VERSION` в корне репозитория. Текущая версия: `1.0.0.1.b0002` (fix-qt-light-theme); предыдущий инкремент — `1.0.0.1.b0001` (релиз с эмулятором сканера ШК). Последний разряд увеличивается по соглашениям версионирования проекта.
+Номер сборки — `client_info.VERSION` в корне репозитория. Текущая версия: `1.0.0.1.b0005` (удаление виджетов + COM refresh); ранее `1.0.0.1.b0004` (Remove API), `1.0.0.1.b0003` (`tbDelete` / `delete_requested`), `1.0.0.1.b0002` (fix-qt-light-theme), `1.0.0.1.b0001` (релиз с эмулятором сканера ШК). Последний разряд увеличивается по соглашениям версионирования проекта.
 
 ## Связанная документация
 
@@ -342,9 +359,14 @@ PyInstaller не всегда подхватывает подмодули `seria
 - Раздел «Связь виджетов: Transport и Generator» выше — `ScannerWidget` в combo, wiring `model_in`/`model_out`, null guards (подзадача #6 плана serial barcode scanner).
 - Раздел «Интеграция сканера в главное окно» выше — `acAddScanner`, save/load `scanners`, `closeEvent`, `_sync_scanner_name_generator`, `setup_models` при `_add_device` (подзадача #5 плана serial barcode scanner).
 - Раздел «Конфигурация JSON» выше — `ScannerParams`, `ScannerConfig`, секция `scanners` в `ConfigFile`, `to_serial_port_config()` (подзадача #2 плана serial barcode scanner).
-- [frontend/scanner-widget.md](frontend/scanner-widget.md) — `ScannerWidget`, интеграция с transport/generator (#6).
+- [frontend/scanner-widget.md](frontend/scanner-widget.md) — `ScannerWidget`, COM refresh (`tbRefreshPorts`), `tbDelete` / `delete_requested`, интеграция с transport/generator (#6).
+- [frontend/scanner-ui.md](frontend/scanner-ui.md) — макет `Scanner.ui` (в т.ч. `tbRefreshPorts`, `tbDelete`).
+- [frontend/widget-delete.md](frontend/widget-delete.md) — `tbDelete` / `delete_requested`, Remove API в `MainLineField`, unit-тесты `test_widget_delete.py` (план widget-delete-com-refresh, #2–#5).
+- Раздел «Удаление виджета» выше — UI, сигнал и снятие с холста; `clear_ui`/`closeEvent` для generators; `setup_models` с полной заменой `_device_data`.
 - [scanner_serial.md](scanner_serial.md) — инфраструктура Serial (`libs/serial_port`), `ScannerEmul`, `ScannerProxy`, `SCANNER_LOGGER` (подзадача #1 плана эмулятора сканера).
-- [scanner_unit_tests.md](scanner_unit_tests.md) — unit-тесты подсистемы сканера: mock COM, `ScannerEmul` без Qt, `ConfigFile.scanners`, wiring в transport/generator — 28 тестов (подзадача #8).
+- [scanner_unit_tests.md](scanner_unit_tests.md) — unit-тесты подсистемы сканера: mock COM, `ScannerEmul` без Qt, `ConfigFile.scanners`, wiring в transport/generator; COM refresh — `test_scanner_com_refresh.py`; Remove API — см. [frontend/widget-delete.md](frontend/widget-delete.md).
 - [com0com_setup.md](com0com_setup.md) — настройка виртуальных COM-портов com0com для тестирования сканера (подзадача #9).
 - [bulk-control.md](bulk-control.md) — меню «Управление», массовый start/stop/clear, `clear_data()` API, порядок pipeline (подзадача #10 плана serial barcode scanner).
 - Раздел «Сборка exe (PyInstaller)» выше — `main.spec`, hiddenimports `pyserial`/`qtawesome`, `scanner_example.json`, `VERSION` (подзадача #9).
+- [user-guides/scanner-widget.md](user-guides/scanner-widget.md) — пользовательские шаги: выбор COM, обновление списка портов (`tbRefreshPorts`), Run/Stop, удаление (`tbDelete`).
+- [user-guides/widget-delete.md](user-guides/widget-delete.md) — удаление любого виджета кнопкой «X» с холста.

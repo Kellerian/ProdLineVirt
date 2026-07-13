@@ -241,6 +241,15 @@ class Ui_Form(object):
 
         self.horizontalLayout_6.addWidget(self.tbRun)
 
+        self.tbDelete = QToolButton(Form)
+        self.tbDelete.setObjectName(u"tbDelete")
+        self.tbDelete.setMinimumSize(QSize(28, 28))
+        self.tbDelete.setMaximumSize(QSize(28, 28))
+        self.tbDelete.setFont(font1)
+        self.tbDelete.setIconSize(QSize(16, 16))
+
+        self.horizontalLayout_6.addWidget(self.tbDelete)
+
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 1)
 
@@ -326,6 +335,10 @@ class Ui_Form(object):
         self.label_4.setText(QCoreApplication.translate("Form", u"\u041d\u041e\u0412\u042b\u0419 \u041a\u041e\u0414 \u041a\u0410\u0416\u0414\u042b\u0415:", None))
         self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
         self.tbRun.setText(QCoreApplication.translate("Form", u"R", None))
+#if QT_CONFIG(tooltip)
+        self.tbDelete.setToolTip(QCoreApplication.translate("Form", u"\u0423\u0434\u0430\u043b\u0438\u0442\u044c", None))
+#endif // QT_CONFIG(tooltip)
+        self.tbDelete.setText(QCoreApplication.translate("Form", u"X", None))
         self.label_5.setText(QCoreApplication.translate("Form", u" \u0424:", None))
         self.label_6.setText(QCoreApplication.translate("Form", u" \u0412:", None))
         self.label_7.setText(QCoreApplication.translate("Form", u" G:", None))

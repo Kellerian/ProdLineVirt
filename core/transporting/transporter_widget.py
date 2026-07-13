@@ -1,8 +1,9 @@
 import time
 from logging import getLogger
 
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QStandardItem, QStandardItemModel, Qt
-from PySide6.QtWidgets import QComboBox, QWidget
+from PySide6.QtWidgets import QComboBox, QMessageBox, QWidget
 
 from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.printing.printer_widget import PrinterWidget
@@ -16,6 +17,10 @@ from libs.model_processing import create_code_item, is_item_ready
 
 
 class TransporterWidget(QWidget, Ui_Form):
+    """Виджет перевозчика кодов между устройствами на холсте Line Emulator."""
+
+    delete_requested = Signal()
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -39,9 +44,27 @@ class TransporterWidget(QWidget, Ui_Form):
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.start)
+        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.spInterval.valueChanged.connect(self.set_interval_settings)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxFrom.currentIndexChanged.connect(self.set_from_model)
+
+    def _on_delete_clicked(self) -> None:
+        """Запрашивает подтверждение удаления; эмитит сигнал, если виджет остановлен."""
+        if self.tbRun.isChecked():
+            QMessageBox.warning(
+                self,
+                "Удаление",
+                "Остановите виджет перед удалением",
+            )
+            return
+        reply = QMessageBox.question(
+            self,
+            "Удаление",
+            f"Удалить виджет «{self.name}»?",
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.delete_requested.emit()
 
     def _get_model_current_widget(
         self, cbx: QComboBox, idx: int
@@ -111,10 +134,18 @@ class TransporterWidget(QWidget, Ui_Form):
 
     def setup_models(
         self, device_widgets: dict[int, CameraWidget | PrinterWidget | ScannerWidget]
-    ):
+    ) -> None:
+        """Replace the device registry and rebuild from/to combo boxes.
+
+        The registry is always replaced so removed device ids cannot linger.
+        Combo rebuild is skipped while the transporter is running.
+
+        Args:
+            device_widgets: Current device widgets keyed by ``id(widget)``.
+        """
+        self._device_data = dict(device_widgets)
         if self.tbRun.isChecked():
             return
-        self._device_data.update(device_widgets)
         from_model, to_model = self.get_data_models()
         self._set_cbx_model(self.cbxFrom, from_model)
         self._set_cbx_model(self.cbxTo, to_model)

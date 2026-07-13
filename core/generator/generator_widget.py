@@ -1,9 +1,9 @@
 import time
 from logging import getLogger
 
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtGui import QStandardItem, QStandardItemModel, Qt
-from PySide6.QtWidgets import QComboBox, QWidget
+from PySide6.QtWidgets import QComboBox, QMessageBox, QWidget
 
 from core.generator.data import CodeType, GeneratorConfig
 from core.generator.generators import get_new_code
@@ -18,6 +18,10 @@ from libs.model_processing import create_code_item
 
 
 class GeneratorWidget(QWidget, Ui_Form):
+    """Виджет генератора кодов на холсте Line Emulator."""
+
+    delete_requested = Signal()
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -43,9 +47,27 @@ class GeneratorWidget(QWidget, Ui_Form):
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.start)
+        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.spInterval.valueChanged.connect(self.set_interval_settings)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxCodeType.currentIndexChanged.connect(self.set_code_type)
+
+    def _on_delete_clicked(self) -> None:
+        """Запрашивает подтверждение удаления; эмитит сигнал, если виджет остановлен."""
+        if self.tbRun.isChecked():
+            QMessageBox.warning(
+                self,
+                "Удаление",
+                "Остановите виджет перед удалением",
+            )
+            return
+        reply = QMessageBox.question(
+            self,
+            "Удаление",
+            f"Удалить виджет «{self.name}»?",
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.delete_requested.emit()
 
     def _populate_code_type_selection(self):
         model = QStandardItemModel()
@@ -136,10 +158,18 @@ class GeneratorWidget(QWidget, Ui_Form):
 
     def setup_models(
         self, device_widgets: dict[int, CameraWidget | PrinterWidget | ScannerWidget]
-    ):
+    ) -> None:
+        """Replace the device registry and rebuild the target combo when stopped.
+
+        Always replaces ``_device_data`` so removed device ids do not linger.
+        The combo model is rebuilt only when the generator is not running.
+
+        Args:
+            device_widgets: Current device widgets keyed by ``id(widget)``.
+        """
+        self._device_data = dict(device_widgets)
         if self.tbRun.isChecked():
             return
-        self._device_data.update(device_widgets)
         to_model = self.get_data_models()
         self._set_cbx_model(self.cbxTo, to_model)
 

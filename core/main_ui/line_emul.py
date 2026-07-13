@@ -388,7 +388,8 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._load_transporters(config.transporters, devices)
         self._load_generator(config.generators, devices)
 
-    def clear_ui(self):
+    def clear_ui(self) -> None:
+        """Stop and delete all device, transporter, and generator widgets."""
         for key in self._device_widgets.copy():
             dev = self._device_widgets.pop(key)
             dev.setParent(None)
@@ -399,6 +400,11 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             trn.setParent(None)
             trn.run(False)
             trn.deleteLater()
+        for key in self._generator_widgets.copy():
+            gen = self._generator_widgets.pop(key)
+            gen.setParent(None)
+            gen.run(False)
+            gen.deleteLater()
         self._sync_scanner_name_generator()
 
     def open_config(self):
@@ -418,26 +424,94 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._active_file = file_path
         self.update_title()
 
-    def _add_transport(self, transport: TransporterWidget):
+    def _add_transport(self, transport: TransporterWidget) -> None:
+        """Register a transporter, place it on the canvas, connect delete."""
         self._transporter_widgets[id(transport)] = transport
         self.transporters_layout.addWidget(transport)
+        transport.delete_requested.connect(self._on_widget_delete_requested)
 
-    def _add_generator(self, generator: GeneratorWidget):
+    def _add_generator(self, generator: GeneratorWidget) -> None:
+        """Register a generator, place it on the canvas, connect delete."""
         self._generator_widgets[id(generator)] = generator
         self.transporters_layout.addWidget(generator)
+        generator.delete_requested.connect(self._on_widget_delete_requested)
 
     def _add_device(
         self, device: CameraWidget | PrinterWidget | ScannerWidget
     ) -> None:
+        """Register a device, place it on the canvas, refresh linked models."""
         self._device_widgets[id(device)] = device
         self._devices_layout.addWidget(device)
+        device.delete_requested.connect(self._on_widget_delete_requested)
         for twd in self._transporter_widgets.values():
             twd.setup_models(self._device_widgets)
         for gwd in self._generator_widgets.values():
             gwd.setup_models(self._device_widgets)
 
+    def _on_widget_delete_requested(self) -> None:
+        """Route ``delete_requested`` from the signal sender to the remove API."""
+        widget = self.sender()
+        if isinstance(widget, (CameraWidget, PrinterWidget, ScannerWidget)):
+            self._remove_device(widget)
+        elif isinstance(widget, TransporterWidget):
+            self._remove_transporter(widget)
+        elif isinstance(widget, GeneratorWidget):
+            self._remove_generator(widget)
+
+    def _remove_device(
+        self, device: CameraWidget | PrinterWidget | ScannerWidget
+    ) -> None:
+        """Remove a device from the registry and canvas; refresh linked models.
+
+        Args:
+            device: Device widget that requested deletion.
+        """
+        key = id(device)
+        if key not in self._device_widgets:
+            return
+        self._device_widgets.pop(key)
+        device.setParent(None)
+        device.run(False)
+        device.deleteLater()
+        for twd in self._transporter_widgets.values():
+            twd.setup_models(self._device_widgets)
+        for gwd in self._generator_widgets.values():
+            gwd.setup_models(self._device_widgets)
+        if isinstance(device, ScannerWidget):
+            self._sync_scanner_name_generator()
+
+    def _remove_transporter(self, transport: TransporterWidget) -> None:
+        """Remove a transporter from the registry and canvas.
+
+        Args:
+            transport: Transporter widget that requested deletion.
+        """
+        key = id(transport)
+        if key not in self._transporter_widgets:
+            return
+        self._transporter_widgets.pop(key)
+        transport.setParent(None)
+        transport.run(False)
+        transport.deleteLater()
+
+    def _remove_generator(self, generator: GeneratorWidget) -> None:
+        """Remove a generator from the registry and canvas.
+
+        Args:
+            generator: Generator widget that requested deletion.
+        """
+        key = id(generator)
+        if key not in self._generator_widgets:
+            return
+        self._generator_widgets.pop(key)
+        generator.setParent(None)
+        generator.run(False)
+        generator.deleteLater()
+
     def closeEvent(self, a0):
         for twd in self._transporter_widgets.values():
             twd.run(False)
+        for gwd in self._generator_widgets.values():
+            gwd.run(False)
         for dwd in self._device_widgets.values():
             dwd.run(False)

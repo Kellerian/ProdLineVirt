@@ -1,8 +1,8 @@
 from logging import getLogger
 
-from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtGui import QStandardItemModel
-from PySide6.QtWidgets import QLabel, QListView, QWidget
+from PySide6.QtWidgets import QLabel, QListView, QMessageBox, QWidget
 
 from core.printing.data import PrinterConfig
 from core.printing.printer_proxy import PrinterProxy
@@ -13,6 +13,9 @@ from libs.model_processing import update_model_data
 
 
 class PrinterWidget(QWidget, Ui_Form):
+    """Виджет эмулятора принтера на холсте Line Emulator."""
+
+    delete_requested = Signal()
 
     def __init__(self, name: str, port: int, buffer: int = 1):
         super().__init__()
@@ -34,11 +37,30 @@ class PrinterWidget(QWidget, Ui_Form):
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
+        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.spAmount.valueChanged.connect(self._set_printer_buffer_size)
         self.model_out.rowsAboutToBeRemoved.connect(
             self._model_rows_to_be_removed
         )
         self.lstData.doubleClicked.connect(self.create_image)
+
+    def _on_delete_clicked(self) -> None:
+        """Запрашивает подтверждение удаления; эмитит сигнал, если виджет остановлен."""
+        if self.tbRun.isChecked():
+            QMessageBox.warning(
+                self,
+                "Удаление",
+                "Остановите виджет перед удалением",
+            )
+            return
+        name = self.leName.text().strip() or self.name
+        reply = QMessageBox.question(
+            self,
+            "Удаление",
+            f"Удалить виджет «{name}»?",
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.delete_requested.emit()
 
     def _set_printer_buffer_size(self, value: int):
         self._printer.set_buffer_size(value)

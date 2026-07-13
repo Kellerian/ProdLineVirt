@@ -5,7 +5,7 @@ from __future__ import annotations
 from logging import getLogger
 
 import qtawesome as qta
-from PySide6.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex, Signal
 from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QMessageBox, QWidget
 
@@ -35,6 +35,8 @@ _SEND_INTERVAL_MS = 0
 class ScannerWidget(QWidget, Ui_Form):
     """Виджет сканера: очередь кодов, COM-порт, ручная отправка и DnD."""
 
+    delete_requested = Signal()
+
     def __init__(self, name: str, port_name: str = "") -> None:
         """Инициализирует виджет сканера.
 
@@ -46,6 +48,7 @@ class ScannerWidget(QWidget, Ui_Form):
         self.setupUi(self)
         self._setup_icon(self.tbRun.isChecked())
         self._setup_send_icon()
+        self._setup_refresh_ports_icon()
         self.name = name
         self._params = ScannerParams()
         self._log = getLogger(UI_LOGGER)
@@ -70,14 +73,45 @@ class ScannerWidget(QWidget, Ui_Form):
         """Подключает сигналы элементов формы."""
         self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
+        self.tbRefreshPorts.clicked.connect(self._on_refresh_ports_clicked)
+        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.btnSend.clicked.connect(self._send_manual_input)
         self.leManualInput.returnPressed.connect(self._send_manual_input)
+
+    def _on_delete_clicked(self) -> None:
+        """Запрашивает подтверждение удаления; эмитит сигнал, если виджет остановлен."""
+        if self.tbRun.isChecked():
+            QMessageBox.warning(
+                self,
+                "Удаление",
+                "Остановите виджет перед удалением",
+            )
+            return
+        name = self.leName.text().strip() or self.name
+        reply = QMessageBox.question(
+            self,
+            "Удаление",
+            f"Удалить виджет «{name}»?",
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.delete_requested.emit()
 
     def _setup_send_icon(self) -> None:
         """Задаёт иконку отправки на кнопке ручного ввода."""
         icon = qta.icon("fa5s.paper-plane", color="#FFFFFF")
         self.btnSend.setIcon(icon)
         self.btnSend.setText("")
+
+    def _setup_refresh_ports_icon(self) -> None:
+        """Задаёт иконку обновления списка COM-портов."""
+        icon = qta.icon("fa5s.sync", color="#FFFFFF")
+        self.tbRefreshPorts.setIcon(icon)
+        self.tbRefreshPorts.setText("")
+
+    def _on_refresh_ports_clicked(self) -> None:
+        """Перечитывает доступные COM-порты, сохраняя текущий выбор."""
+        current_port = self._get_port_name() or None
+        self._refresh_com_ports(select_port=current_port)
 
     def _get_scanner_proxy(self) -> ScannerProxy:
         """Создаёт прокси сканера и подключает сигналы ядра."""
@@ -208,6 +242,7 @@ class ScannerWidget(QWidget, Ui_Form):
         self.tbRun.blockSignals(False)
         self.leName.setDisabled(False)
         self.cbxComPort.setDisabled(False)
+        self.tbRefreshPorts.setDisabled(False)
         self._setup_icon(False)
         QMessageBox.warning(
             self,
@@ -254,6 +289,7 @@ class ScannerWidget(QWidget, Ui_Form):
 
         self.leName.setDisabled(toggled)
         self.cbxComPort.setDisabled(toggled)
+        self.tbRefreshPorts.setDisabled(toggled)
         self.name = self.leName.text().strip() if toggled else self.name
 
         if toggled:
@@ -269,6 +305,7 @@ class ScannerWidget(QWidget, Ui_Form):
                 self._setup_icon(False)
                 self.leName.setDisabled(False)
                 self.cbxComPort.setDisabled(False)
+                self.tbRefreshPorts.setDisabled(False)
                 return
             self._scanner.start(self.name, config)
             self._scheduler.start(self.send_data)
