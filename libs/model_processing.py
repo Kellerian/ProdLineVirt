@@ -5,6 +5,23 @@ from PySide6.QtGui import QStandardItem, QStandardItemModel
 
 ARRIVAL_TIME_ROLE = Qt.UserRole + 1
 
+_INTERNAL_DROP_MIME_TYPES: tuple[str, ...] = (
+    "application/x-qstandarditemmodeldatalist",
+    "application/x-qabstractitemmodeldatalist",
+)
+
+
+def _is_internal_drop_mime(data: QMimeData) -> bool:
+    """Return whether *data* carries Qt item-model drag payload.
+
+    Args:
+        data: Mime payload from a QListView / QAbstractItemView drag.
+
+    Returns:
+        ``True`` when the payload is standard internal QListView DnD format.
+    """
+    return any(data.hasFormat(fmt) for fmt in _INTERNAL_DROP_MIME_TYPES)
+
 
 class CustomItemModel(QStandardItemModel):
     """Item model with drag-and-drop enabled on valid rows."""
@@ -13,7 +30,7 @@ class CustomItemModel(QStandardItemModel):
         """Return item flags with drop enabled for valid indices."""
         flags = super().flags(index)
         if index.isValid():
-            flags &= Qt.ItemFlag.ItemIsDropEnabled
+            flags |= Qt.ItemFlag.ItemIsDropEnabled
         return flags
 
     def dropMimeData(
@@ -24,22 +41,29 @@ class CustomItemModel(QStandardItemModel):
         column: int,
         parent: QModelIndex,
     ) -> bool:
-        """Insert stamped code items for external text drops.
+        """Handle internal QListView drag and external text drops.
 
-        Mirrors ``QStandardItemModel`` text-drop behaviour but uses
-        :func:`create_code_item` so every dropped code gets ``arrival_time``.
+        Internal drag-and-drop (QListView → QListView) is delegated to
+        ``super().dropMimeData``; ``rowsInserted`` handlers in camera and
+        scanner widgets then call :func:`stamp_item`.
+
+        External text drops mirror ``QStandardItemModel`` text-drop behaviour
+        but use :func:`create_code_item` so every dropped code gets
+        ``arrival_time``.
 
         Args:
             data: Mime payload from the drag source.
-            action: Requested drop action (unused).
+            action: Requested drop action.
             row: Target row, or ``-1`` to append.
             column: Target column index.
             parent: Parent index for the drop target.
 
         Returns:
-            ``True`` when text lines were inserted, else ``False``.
+            ``True`` when the drop was accepted, else ``False``.
         """
-        del action
+        if _is_internal_drop_mime(data):
+            return super().dropMimeData(data, action, row, column, parent)
+
         if not data.hasText():
             return False
 

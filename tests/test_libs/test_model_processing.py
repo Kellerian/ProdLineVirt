@@ -6,11 +6,13 @@ import sys
 import unittest
 from unittest.mock import patch
 
+from PySide6.QtCore import QModelIndex, QMimeData, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QApplication
 
 from libs.model_processing import (
     ARRIVAL_TIME_ROLE,
+    CustomItemModel,
     count_ready_prefix,
     create_code_item,
     is_item_ready,
@@ -144,6 +146,88 @@ class TestModelProcessingTiming(unittest.TestCase):
             assert item is not None
             self.assertEqual(item.text(), ("A", "B", "C")[row])
             self.assertEqual(item.data(ARRIVAL_TIME_ROLE), _MONO_BASE)
+
+
+class TestCustomItemModelDrop(unittest.TestCase):
+    """Tests for CustomItemModel dropMimeData and flags."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Create QApplication once for all tests in this class."""
+        _ensure_qapplication()
+
+    def setUp(self) -> None:
+        """Fix monotonic clock at a known base for deterministic timing."""
+        self._mono = _MONO_BASE
+        self._mono_patcher = patch(
+            "libs.model_processing.time.monotonic",
+            side_effect=self._advance_mono,
+        )
+        self._mono_patcher.start()
+
+    def tearDown(self) -> None:
+        """Stop monotonic patch after each test."""
+        self._mono_patcher.stop()
+
+    def _advance_mono(self) -> float:
+        """Return current mocked monotonic time."""
+        return self._mono
+
+    def test_drop_mime_data_internal_format(self) -> None:
+        """Internal QListView MIME from QStandardItemModel inserts a row."""
+        source = QStandardItemModel()
+        source.appendRow(QStandardItem("DRAG-CODE"))
+        mime_data = source.mimeData([source.index(0, 0)])
+        self.assertTrue(
+            mime_data.hasFormat("application/x-qstandarditemmodeldatalist")
+        )
+
+        target = CustomItemModel()
+        accepted = target.dropMimeData(
+            mime_data,
+            Qt.DropAction.CopyAction,
+            -1,
+            0,
+            QModelIndex(),
+        )
+
+        self.assertTrue(accepted)
+        self.assertEqual(target.rowCount(), 1)
+        item = target.item(0, 0)
+        assert item is not None
+        self.assertEqual(item.text(), "DRAG-CODE")
+
+    def test_drop_mime_data_text_external(self) -> None:
+        """External text/plain drop creates stamped code items."""
+        mime_data = QMimeData()
+        mime_data.setText("EXT-CODE")
+
+        target = CustomItemModel()
+        accepted = target.dropMimeData(
+            mime_data,
+            Qt.DropAction.CopyAction,
+            -1,
+            0,
+            QModelIndex(),
+        )
+
+        self.assertTrue(accepted)
+        self.assertEqual(target.rowCount(), 1)
+        item = target.item(0, 0)
+        assert item is not None
+        self.assertEqual(item.text(), "EXT-CODE")
+        self.assertEqual(item.data(ARRIVAL_TIME_ROLE), _MONO_BASE)
+
+    def test_custom_item_model_flags(self) -> None:
+        """Valid index has Enabled, Selectable, and DropEnabled flags."""
+        model = CustomItemModel()
+        model.appendRow(create_code_item("FLAG-CODE"))
+        index = model.index(0, 0)
+
+        flags = model.flags(index)
+        self.assertTrue(flags & Qt.ItemFlag.ItemIsEnabled)
+        self.assertTrue(flags & Qt.ItemFlag.ItemIsSelectable)
+        self.assertTrue(flags & Qt.ItemFlag.ItemIsDropEnabled)
 
 
 if __name__ == "__main__":

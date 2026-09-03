@@ -30,9 +30,14 @@ ARRIVAL_TIME_ROLE = Qt.UserRole + 1
 
 Класс для `lstData` камеры (`CameraWidget.model_in`): наследует `QStandardItemModel`, включает drop на валидных индексах.
 
-Переопределён `dropMimeData`: при внешнем text-drop (файл, буфер обмена, не drag-move между виджетами) каждая непустая строка текста вставляется через `create_code_item`, а не голый `QStandardItem`. Поведение вставки по строкам/колонкам соответствует `QStandardItemModel`, но все новые элементы получают `ARRIVAL_TIME_ROLE`.
+Переопределён `dropMimeData` с двумя путями:
 
-Drag-move между виджетами линии может переносить элемент со старой меткой. Для очереди отправки камеры (`CameraWidget.model_in`) метка сбрасывается в `_on_model_in_rows_inserted` через `stamp_item` (подзадача #4). На других границах узлов — `create_code_item` / `stamp_item` в соответствующих виджетах (#5–#6), не в `dropMimeData`.
+- **Внутренний DnD** (QListView → QListView, Printer/Camera `lstProcessed` → Camera/Scanner `lstData`): MIME `application/x-qstandarditemmodeldatalist` или `application/x-qabstractitemmodeldatalist` делегируется в `super().dropMimeData(...)`; после вставки срабатывает `rowsInserted` → `stamp_item` в `camera_widget.py` / `scanner_widget.py`.
+- **Внешний text-drop** (файл, буфер обмена): каждая непустая строка текста вставляется через `create_code_item`, а не голый `QStandardItem`; поведение вставки по строкам/колонкам соответствует `QStandardItemModel`, все новые элементы получают `ARRIVAL_TIME_ROLE`.
+
+В `flags()` для валидного индекса к флагам `super()` добавляется `ItemIsDropEnabled` (`|=`).
+
+Drag-move между виджетами линии может переносить элемент со старой меткой. Для очереди отправки камеры (`CameraWidget.model_in`) метка сбрасывается в `_on_model_in_rows_inserted` через `stamp_item`. На других границах узлов — `create_code_item` / `stamp_item` в соответствующих виджетах, не в `dropMimeData`.
 
 ## Семантика готовности
 
@@ -62,7 +67,8 @@ sequenceDiagram
 | Точка входа | Модуль | Метод / контекст |
 |-------------|--------|------------------|
 | Загрузка списка кодов в модель | `libs/model_processing.py` | `update_model_data` |
-| Внешний drop в список камеры | `libs/model_processing.py` | `CustomItemModel.dropMimeData` |
+| Внешний drop в список камеры | `libs/model_processing.py` | `CustomItemModel.dropMimeData` (text → `create_code_item`) |
+| Cross-widget DnD в `lstData` | `libs/model_processing.py` | `CustomItemModel.dropMimeData` → `super()`; `stamp_item` в `rowsInserted` виджета |
 | Drop в произвольный `DropListView` | `libs/drag_drop_list_view.py` | `DropListView.dropEvent` |
 | Ошибка «no read» в очередь отправки | `core/scanning/camera_widget.py` | `_send_error` → `model_in` |
 | Результаты сканирования (эмулятор) | `core/scanning/camera_widget.py` | `populate_scanned_data` → `model_out` |
@@ -172,7 +178,8 @@ sequenceDiagram
 - legacy-stamp при первой проверке и готовность после интервала;
 - `count_ready_prefix`: пустая модель, все готовы, останов на первом неготовом (FIFO), `interval_ms = 0`;
 - сброс готовности после `stamp_item` на границе узла;
-- `update_model_data`: все строки после замены несут `ARRIVAL_TIME_ROLE` (`test_update_model_data_stamps_all_items`).
+- `update_model_data`: все строки после замены несут `ARRIVAL_TIME_ROLE` (`test_update_model_data_stamps_all_items`);
+- `CustomItemModel.dropMimeData`: internal MIME (`test_drop_mime_data_internal_format`), внешний text (`test_drop_mime_data_text_external`), флаги индекса (`test_custom_item_model_flags`).
 
 ### `tests/test_core/test_transporter_burst.py`
 
@@ -198,7 +205,7 @@ sequenceDiagram
 |-----------|--------|
 | Хелперы в `model_processing.py` | реализовано (подзадача #1) |
 | `create_code_item` во всех точках входа pipeline | реализовано (подзадача #3) |
-| `CustomItemModel.dropMimeData` для внешнего text-drop | реализовано (подзадача #3) |
+| `CustomItemModel.dropMimeData` (internal DnD + внешний text-drop) | реализовано (подзадача #3; cross-widget DnD — 2026-09-03) |
 | `CodeScheduler` в `CameraWidget` | реализовано (#4): `count_ready_prefix`, FIFO batch, `rowsInserted` → `stamp_item` |
 | `CodeScheduler` в `TransporterWidget` | реализовано (#5): `is_item_ready` для головы очереди, `create_code_item` в приёмник, `_last_transferred_at` (inter-transfer rate limit) |
 | `CodeScheduler` в `GeneratorWidget` | реализовано (#6): `_last_generated_at`, `create_code_item` в `model_out`, динамический `spInterval` |
