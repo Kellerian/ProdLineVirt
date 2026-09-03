@@ -40,6 +40,78 @@ class FlowLayout(QLayout):
             index
         ) if 0 <= index < len(self.__items) else None
 
+    def ordered_widgets(self) -> list[QWidget]:
+        """Return visible child widgets in layout order."""
+        widgets: list[QWidget] = []
+        for item in self.__items:
+            widget = item.widget()
+            if widget is not None and not widget.isHidden():
+                widgets.append(widget)
+        return widgets
+
+    def index_of_widget(self, widget: QWidget) -> int:
+        """Return layout index of ``widget``, or ``-1`` when absent."""
+        for index, item in enumerate(self.__items):
+            if item.widget() is widget:
+                return index
+        return -1
+
+    def remove_widget(self, widget: QWidget) -> bool:
+        """Remove ``widget`` from the layout without destroying it."""
+        index = self.index_of_widget(widget)
+        if index < 0:
+            return False
+        item = self.takeAt(index)
+        if item is not None:
+            del item
+        return True
+
+    def move_widget(self, from_index: int, to_index: int) -> bool:
+        """Move a layout item without destroying its ``QWidgetItem``."""
+        if from_index < 0 or from_index >= len(self.__items):
+            return False
+        if to_index < 0 or to_index > len(self.__items):
+            return False
+        if from_index == to_index:
+            return False
+        item = self.__items.pop(from_index)
+        self.__items.insert(to_index, item)
+        return True
+
+    def set_widget_order(self, widgets: list[QWidget]) -> None:
+        """Reorder layout items to match ``widgets``; unmatched items stay at end."""
+        remaining = list(self.__items)
+        ordered_items: list[QWidgetItem] = []
+        for widget in widgets:
+            for index, item in enumerate(remaining):
+                if item.widget() is widget:
+                    ordered_items.append(item)
+                    remaining.pop(index)
+                    break
+        ordered_items.extend(remaining)
+        self.__items = ordered_items
+
+    def insert_index_at(self, pos: QPoint) -> int:
+        """Return layout insert index for a point in parent-widget coordinates.
+
+        Hit-testing uses post-layout ``QWidget.geometry()`` rects in visual
+        flow order (left-to-right, top-to-bottom). Empty margins between
+        wrapped rows may map to the next row rather than the end of the
+        previous row.
+        """
+        widgets = self.ordered_widgets()
+        if not widgets:
+            return 0
+
+        for index, widget in enumerate(widgets):
+            rect = widget.geometry()
+            center = rect.center()
+            if pos.y() < center.y():
+                return index
+            if rect.top() <= pos.y() <= rect.bottom() and pos.x() < center.x():
+                return index
+        return len(widgets)
+
     def expandingDirections(self):
         return Qt.Orientation.Vertical | Qt.Orientation.Horizontal
 

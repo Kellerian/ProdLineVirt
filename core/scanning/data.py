@@ -15,8 +15,12 @@ class CameraParams(BaseModel):
 
 
 class CameraConfig(BaseModel):
+    """Persisted configuration of one camera emulator widget."""
+
     model_config = ConfigDict(strict=True)
 
+    device_id: str
     name: str
     port: int
     config: CameraParams
+    advanced_expanded: bool = False

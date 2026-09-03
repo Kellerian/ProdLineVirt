@@ -7,8 +7,9 @@ import client_info
 from PySide6.QtWidgets import QApplication
 
 from core.main_ui.line_emul import MainLineField
+from core.main_ui.user_settings import load_user_settings
 from libs.loggers import LOGGERS
-from libs.qt_theme import apply_light_theme
+from libs.qt_theme import ThemeMode, apply_theme
 
 
 def setup_logging():
@@ -39,10 +40,14 @@ if __name__ == '__main__':
     if platform.system() == 'Linux':
         os.environ['QT_QPA_PLATFORM'] = "xcb"
     elif platform.system() == "Windows":
+        # Disable Qt native dark title bars so global QSS controls menu/combo popups
+        # (light theme uses windowsvista style; see libs/qt_theme.apply_qt_style).
         os.environ['QT_QPA_PLATFORM'] = "windows:darkmode=0"
+    setup_pathes()
     setup_logging()
     app = QApplication(sys.argv)
-    apply_light_theme(app)
+    user_settings = load_user_settings()
+    apply_theme(app, ThemeMode(user_settings.theme_preference))
     pw = MainLineField()
     pw.show()
     app.exec()

@@ -8,6 +8,8 @@ from PySide6.QtWidgets import QComboBox, QMessageBox, QWidget
 from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
+from core.main_ui.config_migration import generate_device_id
+from core.main_ui.device_card import DeviceCardMixin, DeviceZone
 from core.transporting.data import TransporterConfig
 from forms.Transporter import Ui_Form
 from libs.code_cleanup import get_clean_code
@@ -16,21 +18,35 @@ from libs.loggers import UI_LOGGER
 from libs.model_processing import create_code_item, is_item_ready
 
 
-class TransporterWidget(QWidget, Ui_Form):
+class TransporterWidget(QWidget, Ui_Form, DeviceCardMixin):
     """Виджет перевозчика кодов между устройствами на холсте Line Emulator."""
 
     delete_requested = Signal()
 
-    def __init__(self):
+    def __init__(self, device_id: str | None = None) -> None:
         super().__init__()
         self.setupUi(self)
         self._log = getLogger(UI_LOGGER)
-        self.name = f"TRW_{id(self)}"
+        self.device_id = device_id or generate_device_id()
+        self.name = f"TRW_{self.device_id[:8]}"
+        self._device_header = self.mount_device_card_header(
+            device_id=self.device_id,
+            device_type="transporter",
+            zone=DeviceZone.SIDEBAR,
+            row_layout=self.horizontalLayout,
+            delete_button=self.tbDelete,
+        )
+        self.tbDelete = self._device_header.delete_button
+        self._device_header.delete_clicked.connect(self._on_delete_clicked)
+        self.wire_advanced_panel(self.tbAdvanced, self.wAdvanced)
+        self.leName.setText(self.name)
         self._setup_icon(self.tbRun.isChecked())
         self._code_scheduler = CodeScheduler()
         self._last_transferred_at: float | None = None
         self._connect_ui()
-        self._device_data: dict[int, CameraWidget | PrinterWidget | ScannerWidget] = {}
+        self._device_data: dict[
+            str, CameraWidget | PrinterWidget | ScannerWidget
+        ] = {}
         self.model_in: QStandardItemModel | None = None
         self.model_out: QStandardItemModel | None = None
 
@@ -44,7 +60,6 @@ class TransporterWidget(QWidget, Ui_Form):
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.start)
-        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.spInterval.valueChanged.connect(self.set_interval_settings)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxFrom.currentIndexChanged.connect(self.set_from_model)
@@ -74,8 +89,7 @@ class TransporterWidget(QWidget, Ui_Form):
         data = model.data(index, Qt.ItemDataRole.DisplayRole)
         if data is None:
             return None
-        widget_id = int(data)
-        widget = self._device_data.get(widget_id)
+        widget = self._device_data.get(str(data))
         return widget
 
     def set_from_model(self, idx: int | None = None):
@@ -114,13 +128,13 @@ class TransporterWidget(QWidget, Ui_Form):
         to_model = QStandardItemModel()
         for device in self._device_data.values():
             dev_name = device.name
-            dev_id = id(device)
+            dev_id = device.device_id
             from_model.appendRow(
-                [QStandardItem(dev_name), QStandardItem(str(dev_id))]
+                [QStandardItem(dev_name), QStandardItem(dev_id)]
             )
             if isinstance(device, (CameraWidget, ScannerWidget)):
                 to_model.appendRow(
-                    [QStandardItem(dev_name), QStandardItem(str(dev_id))]
+                    [QStandardItem(dev_name), QStandardItem(dev_id)]
                 )
         return from_model, to_model
 
@@ -129,11 +143,16 @@ class TransporterWidget(QWidget, Ui_Form):
         cur_wd = self._get_model_current_widget(cbx, cbx.currentIndex())
         cbx.setModel(model)
         cbx.setModelColumn(0)
-        self.set_cbx_current_value(cbx, str(id(cur_wd)))
+        self.set_cbx_current_value(
+            cbx, cur_wd.device_id if cur_wd is not None else ""
+        )
         cbx.blockSignals(False)
 
     def setup_models(
-        self, device_widgets: dict[int, CameraWidget | PrinterWidget | ScannerWidget]
+        self,
+        device_widgets: dict[
+            str, CameraWidget | PrinterWidget | ScannerWidget
+        ],
     ) -> None:
         """Replace the device registry and rebuild from/to combo boxes.
 
@@ -141,7 +160,7 @@ class TransporterWidget(QWidget, Ui_Form):
         Combo rebuild is skipped while the transporter is running.
 
         Args:
-            device_widgets: Current device widgets keyed by ``id(widget)``.
+            device_widgets: Current device widgets keyed by ``device_id``.
         """
         self._device_data = dict(device_widgets)
         if self.tbRun.isChecked():
@@ -150,9 +169,10 @@ class TransporterWidget(QWidget, Ui_Form):
         self._set_cbx_model(self.cbxFrom, from_model)
         self._set_cbx_model(self.cbxTo, to_model)
 
-    def set_source_ids(self, take_from_id: int, give_to: int):
-        self.set_cbx_current_value(self.cbxFrom, str(take_from_id))
-        self.set_cbx_current_value(self.cbxTo, str(give_to))
+    def set_source_ids(self, take_from_id: str, give_to_id: str) -> None:
+        """Select source and destination devices by stable ``device_id``."""
+        self.set_cbx_current_value(self.cbxFrom, take_from_id)
+        self.set_cbx_current_value(self.cbxTo, give_to_id)
 
     def set_interval(self, value: int):
         self.spInterval.setValue(value)
@@ -213,7 +233,9 @@ class TransporterWidget(QWidget, Ui_Form):
             self.cbxTo, self.cbxTo.currentIndex()
         )
         return TransporterConfig(
-            take_from=from_wd.name,
-            give_to=to_wd.name,
-            interval=self.spInterval.value()
+            device_id=self.device_id,
+            take_from=from_wd.device_id if from_wd is not None else "",
+            give_to=to_wd.device_id if to_wd is not None else "",
+            interval=self.spInterval.value(),
+            advanced_expanded=self.is_advanced_expanded(),
         )

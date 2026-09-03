@@ -21,13 +21,11 @@
 | Размер | 28×28 px |
 | Текст | «X» |
 | Tooltip | «Удалить» |
-| Позиция | сразу **после** `tbRun` |
+| Позиция | в **`DeviceCardHeader`** (справа от title slot) — после mount **#5** |
 
-| Форма | Layout шапки | Stretch после добавления |
-|-------|--------------|--------------------------|
-| Printer, Camera | `horizontalLayout` | см. соответствующий `.ui` |
-| Scanner | `horizontalLayout` | `4,1,0,0,0` (`leName` : `cbxComPort` : `tbRefreshPorts` : `tbRun` : `tbDelete`) |
-| Transporter, Generator | `horizontalLayout_6` | `1,1,0,0` (включая `tbRun` и `tbDelete`) |
+| Форма | Header до mount (`.ui`) | После mount |
+|-------|-------------------------|-------------|
+| Printer, Camera, Scanner, Transporter, Generator | `horizontalLayout`: `leName`, `tbRun`, legacy `tbDelete` | `DeviceCardHeader`: grip \| title_layout \| delete |
 
 Регенерация Python после правки `.ui`:
 

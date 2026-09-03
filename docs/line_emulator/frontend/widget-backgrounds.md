@@ -2,36 +2,43 @@
 
 | Параметр | Значение |
 |----------|----------|
-| План | serial-barcode-scanner-bulk-control, подзадача **#7** |
-| Область | UI-формы устройств в `forms/ui/*.ui` |
+| План | serial-barcode-scanner-bulk-control **#7**; централизация QSS — UI modernization **#11** |
+| Область | Layout в `forms/ui/*.ui`; все стили — `media/themes/theme_*.qss` + `libs/qt_theme.py` |
 | Потребители | `*Widget` в `core/*/` — наследуют `Ui_Form` и отображаются в `FlowLayout` главного окна |
 
 ## Назначение
 
 На холсте `MainLineField` одновременно могут находиться десятки виджетов разных типов (принтер, камера, сканер, перевозчик, генератор). У каждого типа задан **светлый фон** корневой формы, чтобы оператор быстро отличал роль узла без чтения подписи.
 
-Фоны не влияют на бизнес-логику: это только `styleSheet` корневого `QWidget` с `objectName` **Form**.
+Фоны не влияют на бизнес-логику: это только QSS корневого `QWidget` с `objectName` **Form** и dynamic property **`deviceType`**.
+
+> **UI modernization (#11–#12):** per-form QSS удалён из `forms/ui/*.ui`; палитра и селекторы `QWidget#Form[deviceType=…]` — единственный источник в `media/themes/theme_*.qss` и `libs/qt_theme.py`. Property `deviceType` задаёт `DeviceCardMixin` (**#5**). Глобальный QSS подключается через `apply_theme(app, ThemeMode(...))` → `theme_light.qss` или `theme_dark.qss` (**#12**); предпочтение — user settings + меню «Вид». См. [theme-system.md](theme-system.md), [qt_theme.md](../qt_theme.md), [layout-and-docking.md](layout-and-docking.md).
 
 ## Реализация
 
-Цвет задаётся в блоке `QWidget#Form` общего `styleSheet` формы (в конце строки стилей, после правил кнопок, combo и скроллбара):
+Цвет задаётся в `media/themes/theme_light.qss` / `theme_dark.qss` селекторами по dynamic property `deviceType` (рамка — общий `QWidget#Form`, фон — `QWidget#Form[deviceType="…"]`):
 
 ```css
 QWidget#Form {
-    background-color: <цвет по типу>;
     border: 1px solid #17365D;
     border-radius: 3px;
 }
+
+QWidget#Form[deviceType="printer"] {
+    background-color: #fff3e0;
+}
+/* … camera, scanner, transporter, generator … */
 ```
 
 | Аспект | Деталь |
 |--------|--------|
-| Селектор | `QWidget#Form` — только корневой виджет формы, не дочерние `QListView` / `QLineEdit` |
-| Рамка | `#17365D`, радиус 3 px — единая для всех типов |
-| Элементы управления | Тёмно-синий фон кнопок и combo (`#226091`), акцент выделения `#f0b321` — **без изменений** в подзадаче #7 |
-| Шрифт | **DejaVu Sans Mono** — общий для семейства форм линии |
+| Селектор | `QWidget#Form[deviceType=…]` — только корневой виджет формы |
+| Property | `deviceType` — `printer` / `camera` / `scanner` / `transporter` / `generator`; устанавливает `DeviceCardMixin.apply_device_type` |
+| Рамка | `#17365D` (light), `#5a8ab0` (dark), радиус 3 px |
+| Элементы управления | Кнопки, combo, menu, scrollbar — в том же `theme_*.qss` (**#11**) |
+| Шрифт UI | sans-serif (`font_ui`); monospace — только `QListView#lstData`, tech `QLineEdit` |
 
-Каждый виджет-потребитель (`PrinterWidget`, `CameraWidget`, `ScannerWidget`, `TransporterWidget`, `GeneratorWidget`) создаётся как `QWidget` с `objectName` `Form` через `Ui_Form.setupUi(self)` — селектор `#Form` срабатывает на экземпляре виджета.
+Каждый виджет-потребитель создаётся как `QWidget` с `objectName` `Form` через `Ui_Form.setupUi(self)`; после `mount_device_card_header` на корне есть `deviceType` для QSS.
 
 ## Палитра по типам виджетов
 
@@ -43,7 +50,7 @@ QWidget#Form {
 | Перевозчик | `TransporterWidget` | `forms/ui/Transporter.ui` | `forms/Transporter.py` | `#e3f2fd` | светло-голубой (blue 50) |
 | Генератор | `GeneratorWidget` | `forms/ui/Generator.ui` | `forms/Generator.py` | `#fff9c4` | янтарный (amber 100) |
 
-**Различимость Generator и Printer:** изначально для генератора планировался `#fffde7` (yellow 50), близкий к `#fff3e0` принтера. В рантайме принят **`#fff9c4`** в `Generator.ui` — более насыщенный жёлтый, чтобы два типа не сливались на холсте.
+**Различимость Generator и Printer:** изначально для генератора планировался `#fffde7` (yellow 50), близкий к `#fff3e0` принтера. В design system принят **`#fff9c4`** (`device_generator` / `deviceType="generator"`) — более насыщенный жёлтый.
 
 ## Визуальная схема на холсте
 
@@ -59,14 +66,15 @@ QWidget#Form {
 └─────────────┘  └─────────────┘
 ```
 
-Контраст текста и кнопок на светлом фоне обеспечивается теми же стилями элементов управления, что и до #7 (тёмные кнопки на светлой подложке формы).
+Контраст текста и кнопок на светлом фоне обеспечивается глобальным theme QSS (**#11**): тёмные кнопки на светлой подложке формы.
 
 ## Изменение цвета
 
-1. Отредактировать `background-color` в `QWidget#Form` в соответствующем `forms/ui/<Device>.ui`.
-2. Пересобрать Python-модуль формы — см. [Регенерация Python-модулей форм](#регенерация-python-модулей-форм-fix-qt-light-theme-подзадача-5) (достаточно одной команды для нужного `.ui`).
+1. Обновить token в `libs/qt_theme.py` (`LIGHT` / `DARK` → `device_*`).
+2. Синхронно обновить hex в `media/themes/theme_light.qss` и `theme_dark.qss` (селектор `QWidget#Form[deviceType="…"]`).
+3. Перезапустить приложение — `forms/ui/*.ui` и `forms/*.py` **не** содержат фонов; регенерация UIC не требуется.
 
-**Источник истины** — файлы `.ui`; `forms/*.py` не редактируют вручную.
+**Источник истины** — `libs/qt_theme.py` + `media/themes/*.qss`.
 
 ## Критерии готовности (подзадача #7)
 
@@ -85,9 +93,9 @@ QWidget#Form {
 
 ### Назначение
 
-Строка меню (`QMenuBar`) и выпадающие подменю (`QMenu`) главного окна **без QSS** на Windows 11 с системной тёмной темой рендерятся нативно и остаются тёмными при светлых формах на холсте. Правила `QMenuBar` и `QMenu` в `styleSheet` `Main.ui` принудительно задают светлую палитру и те же акцентные цвета, что у кнопок и combo на виджетах устройств.
+Строка меню (`QMenuBar`) и выпадающие подменю (`QMenu`) главного окна **без QSS** на Windows 11 с системной тёмной темой рендерятся нативно и остаются тёмными при светлых формах на холсте. Правила `QMenuBar` и `QMenu` в **`media/themes/theme_light.qss`** (и `theme_dark.qss`) принудительно задают палитру и акцентные цвета.
 
-Правила добавлены **к существующим** стилям `QScrollBar` в том же блоке `styleSheet` корневого `QMainWindow`.
+> **#11:** inline QSS удалён из `forms/ui/Main.ui`; правила перенесены в theme QSS.
 
 ### Структура меню
 
@@ -113,7 +121,7 @@ QWidget#Form {
 
 Цвета `#17365D`, `#226091` и `#f0b321` совпадают с рамкой `QWidget#Form`, фоном кнопок/combo и акцентом выделения на виджетах устройств (см. таблицу «Элементы управления» выше).
 
-### Фрагмент QSS (источник истины — `forms/ui/Main.ui`)
+### Фрагмент QSS (источник истины — `media/themes/theme_light.qss`)
 
 ```css
 QMenuBar {
@@ -165,10 +173,10 @@ QMenu::item:selected {
 
 ### Изменение стилей меню
 
-1. Отредактировать блок `QMenuBar` / `QMenu` в `property styleSheet` файла `forms/ui/Main.ui`.
-2. Пересобрать `forms/Main.py` — см. [Регенерация Python-модулей форм](#регенерация-python-модулей-форм-fix-qt-light-theme-подзадача-5).
+1. Отредактировать блок `QMenuBar` / `QMenu` в `media/themes/theme_light.qss` и/или `theme_dark.qss`.
+2. Синхронизировать tokens в `libs/qt_theme.py` при смене hex.
 
-`forms/Main.py` не редактируют вручную.
+`forms/ui/Main.ui` не содержит QSS; `forms/Main.py` не редактируют вручную.
 
 ### Критерии готовности (подзадача #3)
 
@@ -178,7 +186,7 @@ QMenu::item:selected {
 
 ### Связь с Qt-стилем приложения
 
-QSS меню дополняет, но **не заменяет** смену Qt-стиля на `windowsvista` через `apply_light_theme` (подзадачи **#1–#2**). Стиль приложения влияет на отрисовку popup в целом; QSS в `Main.ui` фиксирует внешний вид именно `QMenuBar`/`QMenu` главного окна. Подробности — [qt_theme.md](../qt_theme.md).
+QSS меню дополняет смену Qt-стиля через `apply_theme` / `apply_qt_style` (подзадачи **#1–#2**, **#11**, **#12**). На Windows light — `windowsvista` + `theme_light.qss`; dark — platform style + `theme_dark.qss`. Стиль приложения влияет на отрисовку popup в целом; глобальный QSS фиксирует `QMenuBar`/`QMenu`. Подробности — [qt_theme.md](../qt_theme.md).
 
 QSS popup `QComboBox` в формах устройств — подзадача **#4** (раздел ниже). Сводка всех слоёв фикса — раздел [«Тема Windows»](#тема-windows) ниже.
 
@@ -195,7 +203,7 @@ QSS popup `QComboBox` в формах устройств — подзадача 
 
 На Windows 11 с системной тёмной темой popup `QComboBox` мог отрисовываться нативно (тёмный фон, нечитаемый текст), даже при светлом QSS закрытого поля combo. Селектор `QComboBox QListView { ... }` в Qt 6.7 **не всегда применяется** к выпадающему списку.
 
-Правки в `styleSheet` пяти device-форм принудительно задают светлую читаемую палитру popup и отдельных пунктов списка. Закрытое поле combo (фон `#226091`, текст `#f0b321`) и остальные стили кнопок **не менялись** — изменён только блок popup.
+Правки в **`media/themes/theme_*.qss`** (ранее — в `styleSheet` пяти device-форм) принудительно задают светлую читаемую палитру popup и отдельных пунктов списка. Закрытое поле combo (фон `#226091`, текст `#f0b321`) и остальные стили кнопок — в том же theme QSS (**#11**).
 
 ### Затронутые combo
 
@@ -248,7 +256,7 @@ QComboBox::item:selected {
 
 ### Ширина popup продукта
 
-В `Camera.ui`, `Printer.ui`, `Transporter.ui`, `Generator.ui` сохранено правило для combo с `objectName` **cbxProduct** (селектор popup обновлён вместе с остальными):
+В `media/themes/theme_*.qss` — правило для combo с `objectName` **cbxProduct** (формы `Camera`, `Printer`, `Transporter`, `Generator`):
 
 ```css
 QComboBox#cbxProduct QAbstractItemView {
@@ -260,10 +268,10 @@ QComboBox#cbxProduct QAbstractItemView {
 
 ### Изменение стилей popup combo
 
-1. Отредактировать блок `QComboBox QAbstractItemView` / `QComboBox::item` в `property styleSheet` нужного `forms/ui/<Device>.ui`.
-2. Пересобрать соответствующий `forms/<Device>.py` — см. [Регенерация Python-модулей форм](#регенерация-python-модулей-форм-fix-qt-light-theme-подзадача-5).
+1. Отредактировать блок `QComboBox QAbstractItemView` / `QComboBox::item` в `media/themes/theme_light.qss` и/или `theme_dark.qss`.
+2. Синхронизировать tokens в `libs/qt_theme.py` при смене hex.
 
-`forms/*.py` не редактируют вручную.
+`forms/ui/{Camera,Printer,Scanner,Transporter,Generator}.ui` не содержат QSS; `forms/*.py` не редактируют вручную.
 
 ### Критерии готовности (подзадача #4)
 
@@ -274,34 +282,32 @@ QComboBox#cbxProduct QAbstractItemView {
 
 ### Связь с Qt-стилем приложения
 
-QSS popup combo дополняет смену Qt-стиля на `windowsvista` через `apply_light_theme` (подзадачи **#1–#2**). Стиль приложения влияет на отрисовку popup в целом; QSS в device-формах фиксирует внешний вид именно выпадающих списков `QComboBox`. Подробности — [qt_theme.md](../qt_theme.md).
+QSS popup combo дополняет смену Qt-стиля через `apply_theme` / `apply_qt_style` (подзадачи **#1–#2**, **#11**, **#12**). Стиль приложения влияет на отрисовку popup в целом; глобальный QSS из `theme_*.qss` фиксирует выпадающие списки `QComboBox`. Подробности — [qt_theme.md](../qt_theme.md).
 
-## Регенерация Python-модулей форм (fix-qt-light-theme, подзадача **#5**)
+## Регенерация Python-модулей форм
 
 | Параметр | Значение |
 |----------|----------|
-| План | fix-qt-light-theme, подзадача **#5** |
+| Планы | fix-qt-light-theme **#5** (синхронизация UIC); UI modernization **#11** (удаление QSS из `.ui`) |
 | Компилятор | Qt User Interface Compiler **6.7.1** (PySide6) |
-| Источник истины | `forms/ui/*.ui` |
+| Источник layout | `forms/ui/*.ui` — geometry, widgets, `objectName`; **без** `styleSheet` |
+| Стили | `media/themes/theme_*.qss` — не проходят через UIC |
 | Сгенерированные модули | `forms/{Main,Camera,Printer,Scanner,Transporter,Generator}.py` |
-| Зависимости | QSS в `.ui` из подзадач **#3** (меню) и **#4** (popup combo) |
 
 ### Назначение
 
-После правок `styleSheet` в макетах Qt Designer Python-модули форм **перегенерируются** из `.ui`, чтобы рантайм (`Ui_MainWindow.setupUi`, `Ui_Form.setupUi`) отдавал тот же QSS, что задан в Designer. Ручные правки в `forms/*.py` запрещены — при регенерации они теряются (заголовок файла: *«WARNING! All changes made in this file will be lost when recompiling UI file!»*).
+После правок **layout** в Qt Designer Python-модули форм **перегенерируются** из `.ui`. Ручные правки в `forms/*.py` запрещены — при регенерации они теряются (заголовок файла: *«WARNING! All changes made in this file will be lost when recompiling UI file!»*).
+
+С **#11** per-form `styleSheet` удалён из всех device `.ui`; `Main.ui` не содержал inline QSS. Регенерация UIC **не** переносит QSS — стили задаются только глобальным theme QSS через `apply_theme()`.
 
 ### Синхронизированные модули
 
-| Сгенерированный модуль | Макет | Содержимое из подзадач |
-|------------------------|-------|------------------------|
-| `forms/Main.py` | `forms/ui/Main.ui` | QSS `QMenuBar`, `QMenuBar::item` (`:selected`, `:pressed`), `QMenu`, `QMenu::separator`, `QMenu::item` — подзадача **#3** |
-| `forms/Camera.py` | `forms/ui/Camera.ui` | `QComboBox QAbstractItemView`, `QComboBox::item`, `::item:hover`, `::item:selected`; `QComboBox#cbxProduct QAbstractItemView` — **#4** |
-| `forms/Printer.py` | `forms/ui/Printer.ui` | то же — **#4** |
-| `forms/Scanner.py` | `forms/ui/Scanner.ui` | то же — **#4** |
-| `forms/Transporter.py` | `forms/ui/Transporter.ui` | то же — **#4** |
-| `forms/Generator.py` | `forms/ui/Generator.ui` | то же — **#4** |
+| Сгенерированный модуль | Макет | Содержимое `.ui` |
+|------------------------|-------|------------------|
+| `forms/Main.py` | `forms/ui/Main.ui` | layout shell, меню, docks — без QSS |
+| `forms/Camera.py` … `forms/Generator.py` | `forms/ui/{Camera,…,Generator}.ui` | layout device-карточек, `objectName` `Form` — без QSS |
 
-Светлые фоны `QWidget#Form` (подзадача #7, другой план) и остальной QSS кнопок/combo в device-формах также проходят через ту же регенерацию — меняется только соответствующий `.ui`.
+Исторически QSS menu/combo переносились через `.ui` (fix-qt-light-theme **#3–#4**); с **#11** единственный источник — `theme_*.qss`.
 
 ### Инструмент и обёртка `pyside6-uic`
 
@@ -356,21 +362,20 @@ command = f"pyside6-uic {file_to_convert} -o {output_file} --rc-prefix"
 .\venv\Scripts\python.exe -c "from build_project import generate_ui_files; generate_ui_files()"
 ```
 
-### Критерии готовности (подзадача #5)
+### Критерии готовности
 
-- [x] Шесть модулей `forms/{Main,Camera,Printer,Scanner,Transporter,Generator}.py` синхронны с `forms/ui/*.ui`.
-- [x] `forms/Main.py` содержит QSS меню из подзадачи **#3**.
-- [x] Пять device-модулей содержат `QComboBox QAbstractItemView` и псевдо-селекторы `::item` из подзадачи **#4**.
+- [x] Шесть модулей `forms/{Main,Camera,Printer,Scanner,Transporter,Generator}.py` синхронны с `forms/ui/*.ui` (fix-qt-light-theme **#5**).
+- [x] Per-form `styleSheet` удалён из device `.ui`; `forms/*.py` не содержат QSS (**#11**).
 - [x] Ручных правок в сгенерированных `.py` нет; заголовок — Qt UIC 6.7.1.
 
 ## Тема Windows
 
 | Параметр | Значение |
 |----------|----------|
-| План | fix-qt-light-theme (подзадачи **#1–#6**) |
-| Версия | `1.0.0.1.b0002` (`client_info.VERSION`; запись в `CHANGES.LOG`) |
-| Платформа | Windows 11 + системная тёмная тема + `QT_QPA_PLATFORM=windows:darkmode=0` в `main.py` |
-| Точка входа | `main.py` → `apply_light_theme(app)` до `MainLineField()` |
+| План | fix-qt-light-theme (**#1–#6**); runtime light/dark/system — UI modernization **#12**, **#14** |
+| Версия | `1.0.0.1.b0006` (`client_info.VERSION`; UI modernization release) |
+| Платформа | Windows 11 + `QT_QPA_PLATFORM=windows:darkmode=0` в `main.py` |
+| Точка входа | `main.py` → `load_user_settings()` + `apply_theme(app, ThemeMode(...))` до `MainLineField()` |
 
 ### Проблема
 
@@ -387,10 +392,11 @@ command = f"pyside6-uic {file_to_convert} -o {output_file} --rc-prefix"
 
 | Слой | Подзадача | Модуль / макет | Что делает |
 |------|-----------|----------------|------------|
-| **1. Qt-стиль** | #1–#2 | `libs/qt_theme.py`, `main.py` | `apply_light_theme(app)` → `app.setStyle("windowsvista")` на Windows |
-| **2. QSS меню** | #3 | `forms/ui/Main.ui` | Светлые `QMenuBar` / `QMenu` — [раздел выше](#qss-меню-главного-окна-fix-qt-light-theme-подзадача-3) |
-| **3. QSS popup combo** | #4 | `forms/ui/{Camera,Printer,Scanner,Transporter,Generator}.ui` | `QAbstractItemView` + `::item` — [раздел выше](#qss-popup-qcombobox-в-device-формах-fix-qt-light-theme-подзадача-4) |
-| **Синхронизация `.py`** | #5 | `forms/*.py` ← `forms/ui/*.ui` | Регенерация UIC — [раздел выше](#регенерация-python-модулей-форм-fix-qt-light-theme-подзадача-5); без неё слои 2–3 не попадают в рантайм |
+| **1. Qt-стиль + QSS** | #1–#2, **#11**, **#12** | `libs/qt_theme.py`, `main.py` | `apply_theme(app, ThemeMode(...))` → `apply_qt_style` + `theme_light.qss` или `theme_dark.qss` |
+| **2. QSS меню** | #3, **#11**, **#12** | `media/themes/theme_*.qss` | `QMenuBar` / `QMenu` — [раздел выше](#qss-меню-главного-окна-fix-qt-light-theme-подзадача-3) |
+| **3. QSS popup combo + device cards** | #4, **#11**, **#12** | `media/themes/theme_*.qss` | `QAbstractItemView` + `::item` + `deviceType` фоны — [разделы выше](#qss-popup-qcombobox-в-device-формах-fix-qt-light-theme-подзадача-4) |
+| **Синхронизация `.py`** | #5, **#11** | `forms/*.py` ← `forms/ui/*.ui` | UIC только layout/geometry; QSS не в `.ui` |
+| **User preference** | **#12** | `user_settings.py`, меню «Вид» | `theme_preference` в `line_emulator_user.json`, не в project JSON |
 
 Слои **дополняют** друг друга: стиль `windowsvista` задаёт базовую отрисовку popup; QSS фиксирует палитру конкретных виджетов, которые иначе наследуют системную тёмную тему.
 
@@ -399,13 +405,13 @@ main.py
   ├─ QT_QPA_PLATFORM=windows:darkmode=0
   ├─ setup_logging()
   ├─ QApplication(sys.argv)
-  ├─ apply_light_theme(app)          ← слой 1: windowsvista
+  ├─ load_user_settings()
+  ├─ apply_theme(app, ThemeMode(...))   ← apply_qt_style + theme_*.qss (#12)
   └─ MainLineField()
-       ├─ forms/Main.py              ← слой 2: QMenuBar/QMenu QSS
-       └─ device widgets             ← слой 3: QComboBox popup QSS
+       └─ device widgets             ← deviceType → фон из theme QSS
 ```
 
-Подробности API `apply_light_theme`, контекст бага и полный порядок вызова (включая `setup_logging`) — в [qt_theme.md](../qt_theme.md).
+Подробности API `apply_theme`, контекст бага и полный порядок вызова — в [qt_theme.md](../qt_theme.md). Разделение theme vs project layout — [layout-and-docking.md](layout-and-docking.md).
 
 ### Порядок запуска (`main.py`)
 
@@ -414,10 +420,11 @@ main.py
 | 1 | `os.environ['QT_QPA_PLATFORM'] = "windows:darkmode=0"` (только Windows) |
 | 2 | `setup_logging()` — инициализация логгеров до GUI |
 | 3 | `app = QApplication(sys.argv)` |
-| 4 | `apply_light_theme(app)` — до создания главного окна |
-| 5 | `MainLineField()` → `show()` → `app.exec()` |
+| 4 | `load_user_settings()` |
+| 5 | `apply_theme(app, ThemeMode(user_settings.theme_preference))` — до создания главного окна |
+| 6 | `MainLineField()` → `show()` → `app.exec()` |
 
-На Linux `apply_light_theme` — no-op (стиль не меняется); на macOS переменная `QT_QPA_PLATFORM` не задаётся.
+На Linux `apply_qt_style` для light/dark — no-op (стиль не меняется); QSS применяется. На macOS переменная `QT_QPA_PLATFORM` не задаётся.
 
 ### Регенерация форм
 
@@ -430,22 +437,31 @@ main.py
 3. Popup `QComboBox` (COM-порт сканера, продукт, from/to) — золотой текст `#f0b321` на фоне `#19466a`
 4. Светлые фоны виджетов на холсте без регрессии
 
-### Вне scope
+### Вне scope (исторически)
 
-- Переработка всего UI под тёмную тему
 - Нативные `QFileDialog` в `core/main_ui/line_emul.py` — при необходимости отдельная задача (`QFileDialog.DontUseNativeDialog`)
 
-### Критерии готовности (план fix-qt-light-theme)
+С **#12** полная тёмная тема UI (menu, combo, device cards, dock shell) реализована через `theme_dark.qss` + `apply_theme(DARK)`.
 
-- [x] `libs/qt_theme.py` — `apply_light_theme` с `windowsvista` на Windows
-- [x] `main.py` — вызов после `QApplication`, до `MainLineField`
-- [x] `Main.ui` — QSS `QMenuBar` / `QMenu`
-- [x] Пять device-форм — `QAbstractItemView` + `::item` для popup `QComboBox`
-- [x] `forms/*.py` синхронны с `.ui`
-- [x] `VERSION` `1.0.0.1.b0002`, запись в `CHANGES.LOG`, раздел «Тема Windows» в этом документе
+### Критерии готовности (план fix-qt-light-theme + #11–#12)
+
+- [x] `libs/qt_theme.py` — `apply_theme` + `apply_qt_style` + `theme_*.qss` на Windows (**#11**, **#12**)
+- [x] `main.py` — `load_user_settings` + `apply_theme` после `QApplication`, до `MainLineField`
+- [x] Menu / combo / device backgrounds — в `media/themes/theme_*.qss`, не в `.ui` (**#11**)
+- [x] Пять device-форм — popup через `QAbstractItemView` + `::item` (исторически **#4**, сейчас theme QSS)
+- [x] `forms/*.py` синхронны с `.ui` (layout only)
+- [x] `build/spec/main.spec` — `media/themes` в `datas` (**#11**); UI-модули в `hiddenimports` (**#14**)
+
+### Критерии готовности (UI modernization #11–#12)
+
+- [x] Per-form QSS и per-widget DejaVu fonts удалены из `forms/ui/{Printer,Camera,Scanner,Transporter,Generator}.ui`.
+- [x] `deviceType` backgrounds, controls, typography — глобальный theme QSS.
+- [x] `apply_theme()` загружает `theme_light.qss` или `theme_dark.qss` по resolved mode.
 
 ## Связанная документация
 
-- [qt_theme.md](../qt_theme.md) — модуль `libs/qt_theme.py`, `apply_light_theme`, API и контекст бага Qt 6.7.
+- [qt_theme.md](../qt_theme.md) — модуль `libs/qt_theme.py`, `apply_theme`, API и контекст бага Qt 6.7.
+- [layout-and-docking.md](layout-and-docking.md) — theme в user settings vs layout в project JSON.
+- [theme-system.md](theme-system.md) — централизованная design system (#3, **#11–#12**), слои QSS.
 - [scanner-ui.md](scanner-ui.md) — макет и стиль формы сканера (`#f3e5f5`), сравнение с `Printer.ui`; popup `cbxComPort` (подзадача #4); генерация `Scanner.py` — см. также [регенерацию форм](#регенерация-python-модулей-форм-fix-qt-light-theme-подзадача-5) (подзадача #5).
 - [line_emulator.md](../line_emulator.md) — обзор приложения и размещение виджетов на холсте; меню **Управление** и массовые операции.

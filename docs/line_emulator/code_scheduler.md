@@ -162,7 +162,7 @@ flowchart TD
 **Модуль:** `core/transporting/transporter_widget.py`  
 **Очереди:** `model_in` — `model_out` виджета-источника (`cbxFrom`); `model_out` — `model_in` виджета-приёмника (`cbxTo`).
 
-**Устройства в combo (подзадача #6 плана scanner):** источник — `CameraWidget`, `PrinterWidget`, `ScannerWidget`; приёмник — `CameraWidget`, `ScannerWidget`. Тип `_device_data`: `dict[int, CameraWidget | PrinterWidget | ScannerWidget]`.
+**Устройства в combo (подзадача #6 плана scanner):** источник — `CameraWidget`, `PrinterWidget`, `ScannerWidget`; приёмник — `CameraWidget`, `ScannerWidget`. Реестр `_device_data`: `dict[str, CameraWidget | PrinterWidget | ScannerWidget]` — ключ **`device_id`** (стабильный shortuuid, подзадача **#4** UI modernization), не `id(widget)`. Combo: `QStandardItemModel` с колонками «имя» / `device_id`; lookup `_device_data[device_id]`.
 
 При включении транспорта (`run(True)`) планировщик стартует с `send_data` как callback; при остановке — `stop()`. Комбобоксы источника и приёмника блокируются на время работы.
 
@@ -293,7 +293,7 @@ flowchart TD
 
 ### `set_to_model` и `get_data_models` (#6)
 
-`get_data_models()` включает в `cbxTo` только `CameraWidget` и `ScannerWidget`. `set_to_model` привязывает `model_out = widget.model_in`; при `widget is None` — предупреждение в лог без смены ссылки. `setup_models` обновляет список при добавлении сканера на холст (если генератор не в Run).
+`get_data_models()` включает в `cbxTo` только `CameraWidget` и `ScannerWidget`. `set_to_model` привязывает `model_out = widget.model_in`; при `widget is None` — предупреждение в лог без смены ссылки. `setup_models(device_widgets)` принимает `_device_widgets` из `MainLineField` (`dict[str, widget]` по **#4**); перестраивает combo при добавлении сканера на холст, если генератор не в Run. `options()` пишет `give_to` как `device_id` выбранного приёмника.
 
 **Эталон inter-transfer rate limit:** генератор и транспортёр сочетают тик 10 мс с полем `_last_*_at` — на каждом тике проверяется elapsed с **последней исходящей** операции (`_last_generated_at` / `_last_transferred_at`), а не только `arrival_time` головного элемента очереди.
 

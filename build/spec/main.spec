@@ -19,6 +19,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('..\\..\\media\\logo.ico', 'media'),
+        ('..\\..\\media\\themes', 'media/themes'),
         _qtawesome_fonts,
     ],
     hiddenimports=[
@@ -30,6 +31,13 @@ a = Analysis(
         'serial.tools.list_ports',
         'qtawesome',
         'qtawesome.iconic_font',
+        'core.main_ui.device_card',
+        'core.main_ui.config_migration',
+        'core.main_ui.sidebar_layout',
+        'core.main_ui.canvas_area',
+        'core.main_ui.user_settings',
+        'core.main_ui.flow_layout',
+        'libs.qt_theme',
     ],
     hookspath=[],
     hooksconfig={},

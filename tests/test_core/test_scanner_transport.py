@@ -53,7 +53,10 @@ class TestTransporterScannerIntegration(unittest.TestCase):
         transport = TransporterWidget()
         scanner = _make_scanner("SCAN_SRC")
         printer = _make_printer()
-        transport._device_data = {id(scanner): scanner, id(printer): printer}
+        transport._device_data = {
+            scanner.device_id: scanner,
+            printer.device_id: printer,
+        }
 
         from_model, to_model = transport.get_data_models()
 
@@ -67,7 +70,7 @@ class TestTransporterScannerIntegration(unittest.TestCase):
         """Transporter source model is scanner.model_out."""
         transport = TransporterWidget()
         scanner = _make_scanner()
-        transport._device_data = {id(scanner): scanner}
+        transport._device_data = {scanner.device_id: scanner}
         from_model, _ = transport.get_data_models()
         transport.cbxFrom.setModel(from_model)
         transport.cbxFrom.setModelColumn(0)
@@ -81,7 +84,7 @@ class TestTransporterScannerIntegration(unittest.TestCase):
         """Transporter destination model is scanner.model_in."""
         transport = TransporterWidget()
         scanner = _make_scanner()
-        transport._device_data = {id(scanner): scanner}
+        transport._device_data = {scanner.device_id: scanner}
         _, to_model = transport.get_data_models()
         transport.cbxTo.setModel(to_model)
         transport.cbxTo.setModelColumn(0)
@@ -105,7 +108,10 @@ class TestGeneratorScannerIntegration(unittest.TestCase):
         generator = GeneratorWidget()
         scanner = _make_scanner("SCAN_DST")
         printer = _make_printer()
-        generator._device_data = {id(scanner): scanner, id(printer): printer}
+        generator._device_data = {
+            scanner.device_id: scanner,
+            printer.device_id: printer,
+        }
 
         to_model = generator.get_data_models()
         to_names = [to_model.item(row, 0).text() for row in range(to_model.rowCount())]
@@ -116,7 +122,7 @@ class TestGeneratorScannerIntegration(unittest.TestCase):
         """Generator output model is scanner.model_in."""
         generator = GeneratorWidget()
         scanner = _make_scanner()
-        generator._device_data = {id(scanner): scanner}
+        generator._device_data = {scanner.device_id: scanner}
         to_model = generator.get_data_models()
         generator.cbxTo.setModel(to_model)
         generator.cbxTo.setModelColumn(0)

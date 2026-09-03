@@ -4,6 +4,8 @@ from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QLabel, QListView, QMessageBox, QWidget
 
+from core.main_ui.config_migration import generate_device_id
+from core.main_ui.device_card import DeviceCardMixin, DeviceZone
 from core.printing.data import PrinterConfig
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
@@ -12,14 +14,31 @@ from libs.loggers import UI_LOGGER
 from libs.model_processing import update_model_data
 
 
-class PrinterWidget(QWidget, Ui_Form):
+class PrinterWidget(QWidget, Ui_Form, DeviceCardMixin):
     """Виджет эмулятора принтера на холсте Line Emulator."""
 
     delete_requested = Signal()
 
-    def __init__(self, name: str, port: int, buffer: int = 1):
+    def __init__(
+        self,
+        name: str,
+        port: int,
+        buffer: int = 1,
+        device_id: str | None = None,
+    ):
         super().__init__()
         self.setupUi(self)
+        self.device_id = device_id or generate_device_id()
+        self._device_header = self.mount_device_card_header(
+            device_id=self.device_id,
+            device_type="printer",
+            zone=DeviceZone.CANVAS,
+            row_layout=self.horizontalLayout,
+            delete_button=self.tbDelete,
+        )
+        self.tbDelete = self._device_header.delete_button
+        self._device_header.delete_clicked.connect(self._on_delete_clicked)
+        self.wire_advanced_panel(self.tbAdvanced, self.wAdvanced)
         self.name = name
         self._data_list: list[str] = []
         self._setup_icon(self.tbRun.isChecked())
@@ -37,7 +56,6 @@ class PrinterWidget(QWidget, Ui_Form):
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
-        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.spAmount.valueChanged.connect(self._set_printer_buffer_size)
         self.model_out.rowsAboutToBeRemoved.connect(
             self._model_rows_to_be_removed
@@ -135,9 +153,11 @@ class PrinterWidget(QWidget, Ui_Form):
 
     def options(self) -> PrinterConfig:
         return PrinterConfig(
+            device_id=self.device_id,
             name=self.name,
             port=int(self.leConnetionStr.text()),
-            buffer=self.spAmount.value()
+            buffer=self.spAmount.value(),
+            advanced_expanded=self.is_advanced_expanded(),
         )
 
     def create_image(self, idx: QModelIndex):

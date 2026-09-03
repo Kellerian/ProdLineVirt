@@ -11,16 +11,19 @@
 
 Статический макет PySide6 для виджета эмулятора ручного сканера штрихкодов на линии. Форма задаёт компоновку, имена виджетов, стили и режимы drag-and-drop; бизнес-логика (COM-порт, очередь отправки, `CodeScheduler`) реализована в `ScannerWidget` — см. [scanner-widget.md](scanner-widget.md).
 
-Макет наследует общую сетку виджетов линии (как `Printer.ui`): верхняя строка **название | подключение | Run/Stop**, средняя — дополнительные элементы управления, нижняя — список данных на всю оставшуюся высоту.
+Макет наследует общую сетку виджетов линии (как `Printer.ui`): chrome-шапка **название | Run/Stop | delete** (через `DeviceCardHeader`), always-visible блок (ручной ввод + очередь), кнопка **«Дополнительно»**, скрытая панель COM (**#10** UI modernization).
 
 ## Макет (ASCII)
 
 ```text
 ┌──────────────────────────────────────────────────┐  QWidget#Form, фон #f3e5f5
-│ [Название]  [Выберите порт ▼]  [↻]  [R]  [X]    │  horizontalLayout (4:1:0:0:0)
+│ [≡] [Название]                          [R] [X]  │  DeviceCardHeader (после mount)
 │ [Ручной ввод текста...........] [▶]             │  horizontalLayout_2 (1:0)
 │ ┌──────────────────────────────────────────────┐ │
-│ │  lstData — очередь (DropOnly)                │ │  verticalLayout stretch 0,0,1
+│ │  lstData — очередь (DropOnly)                │ │  verticalLayout stretch
+│ └──────────────────────────────────────────────┘ │
+│ [Дополнительно]                                  │  tbAdvanced (collapsed)
+│ ┌ wAdvanced (hidden): [COM ▼] [↻] ─────────────┐ │  раскрывается по toggle
 │ └──────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────┘
 ```
@@ -31,24 +34,26 @@
 
 | objectName | Тип | Роль в UI | Ключевые свойства |
 |------------|-----|-----------|-------------------|
-| `leName` | `QLineEdit` | Отображаемое имя сканера на линии | `maxLength` 25; placeholder «Название» |
-| `cbxComPort` | `QComboBox` | Выбор COM-порта | Первый элемент «Выберите порт» (placeholder); tooltip «COM-порт»; шрифт bold 10 pt |
-| `tbRefreshPorts` | `QToolButton` | Обновление списка COM-портов | Tooltip «Обновить список COM-портов»; текст «↻» в `.ui` (в рантайме заменяется иконкой); 28×28 px |
-| `tbRun` | `QToolButton` | Запуск / остановка эмулятора | Текст «R» (иконка Run/Stop задаётся в виджете); `checkable`, 28×28 px |
-| `tbDelete` | `QToolButton` | Запрос удаления виджета | Tooltip «Удалить»; текст «X»; 28×28 px; сразу после `tbRun` |
-| `leManualInput` | `QLineEdit` | Ручной ввод кода для отправки | Placeholder «Ручной ввод текста»; `clearButtonEnabled` |
-| `btnSend` | `QToolButton` | Отправка текста из ручного ввода | Текст «▶»; tooltip «Отправить»; 28×28 px |
-| `lstData` | `QListView` | Очередь кодов (приём drag-and-drop) | `DropOnly`, `MoveAction`, `NoEditTriggers`, `ExtendedSelection`, чередующиеся строки; tooltip «Список очереди (перетащите коды сюда)» |
+| `leName` | `QLineEdit` | Отображаемое имя сканера на линии | `maxLength` 25; placeholder «Название»; в `title_layout` после mount |
+| `tbRun` | `QToolButton` | Запуск / остановка эмулятора | Текст «R»; `checkable`, 28×28 px; в `title_layout` |
+| `tbDelete` | `QToolButton` | Запрос удаления (legacy в `.ui`) | Заменяется кнопкой `DeviceCardHeader` при mount (**#5**) |
+| `leManualInput` | `QLineEdit` | Ручной ввод кода для отправки | Placeholder «Ручной ввод текста»; always visible |
+| `btnSend` | `QToolButton` | Отправка текста из ручного ввода | Tooltip «Отправить»; always visible |
+| `lstData` | `QListView` | Очередь кодов (приём drag-and-drop) | `DropOnly`; always visible |
+| `tbAdvanced` | `QToolButton` | Toggle секции «Дополнительно» | `checkable`, default unchecked (**#10**) |
+| `wAdvanced` | `QWidget` | Панель COM-порта | `visible=false` по умолчанию |
+| `cbxComPort` | `QComboBox` | Выбор COM-порта | Внутри `wAdvanced`; placeholder «Выберите порт» |
+| `tbRefreshPorts` | `QToolButton` | Обновление списка COM | Внутри `wAdvanced`; tooltip «Обновить список COM-портов» |
 
-### Строка name | COM | Refresh | R/S | Delete
+### Строка header (после mount #5)
 
-Горизонтальный layout `horizontalLayout` с пропорциями stretch **4 : 1 : 0 : 0 : 0**:
+Горизонтальный layout `horizontalLayout` содержит `DeviceCardHeader`:
 
-1. **`leName`** — узкое поле имени (как у принтера/камеры).
-2. **`cbxComPort`** — вместо `QLineEdit` порта у принтера (`leConnetionStr`) используется выпадающий список портов. Список портов заполняется в рантайме из `serial.tools.list_ports` (`ScannerWidget._refresh_com_ports`), не в `.ui`.
-3. **`tbRefreshPorts`** — между combo и Run; клик перечитывает порты ОС без перезапуска приложения (логика в `ScannerWidget`, план widget-delete-com-refresh, подзадача **#1**).
-4. **`tbRun`** — переключаемая кнопка Run/Stop; в покое отображает «R»; при включении виджет меняет текст/иконку на «S» (логика в `ScannerWidget`, по аналогии с `PrinterWidget._setup_icon`).
-5. **`tbDelete`** — сразу после Run; запрос удаления с подтверждением (логика в `ScannerWidget`, план widget-delete-com-refresh, подзадача **#2**). Общий паттерн на всех виджетах — [widget-delete.md](widget-delete.md).
+1. **grip «≡»** — единственный drag handle для reorder.
+2. **`leName`**, **`tbRun`** — в `title_layout`.
+3. **delete** — кнопка header (legacy `tbDelete` из `.ui` удаляется).
+
+COM-элементы **`cbxComPort`** и **`tbRefreshPorts`** перенесены в **`wAdvanced`** (**#10**); при collapsed advanced они скрыты, но порт по-прежнему обязателен перед Run (валидация в `ScannerWidget`).
 
 ### Ручной ввод и отправка
 
@@ -114,8 +119,9 @@ if _com_port_placeholder is not None:
 
 | Аспект | Printer | Scanner |
 |--------|---------|---------|
-| Подключение | `leConnetionStr` (порт TCP) | `cbxComPort` (COM combo) + `tbRefreshPorts` |
-| Средняя строка | «Буфер» + `spAmount` | `leManualInput` + `btnSend` |
+| Подключение | `leConnetionStr` в `wAdvanced` (TCP) | `cbxComPort` + `tbRefreshPorts` в `wAdvanced` (COM) |
+| Always visible | `lstData` (буфер) | `leManualInput` + `btnSend`, `lstData` |
+| Collapsible | `tbAdvanced` / `wAdvanced` | то же (**#10**) |
 | `lstData` drag | `DragOnly` (источник) | `DropOnly` (приёмник) |
 | Фон `#Form` | `#fff3e0` | `#f3e5f5` |
 
@@ -133,8 +139,9 @@ if _com_port_placeholder is not None:
 
 | Элемент | План / подзадача | Документация |
 |---------|------------------|--------------|
-| `tbRefreshPorts` | widget-delete-com-refresh **#1** | раздел «Строка name \| COM \| …» выше; [scanner-widget.md](scanner-widget.md) |
-| `tbDelete` | widget-delete-com-refresh **#2** | [widget-delete.md](widget-delete.md) |
+| `tbRefreshPorts` | widget-delete-com-refresh **#1**; перенос в `wAdvanced` — UI modernization **#10** | [scanner-widget.md](scanner-widget.md), [device-card.md](device-card.md) |
+| `tbDelete` | widget-delete-com-refresh **#2**; mount в `DeviceCardHeader` — **#5** | [widget-delete.md](widget-delete.md) |
+| `tbAdvanced` / `wAdvanced` | UI modernization **#10** | [device-card.md](device-card.md) |
 
 **Реализовано вне формы (логика / главное окно):**
 

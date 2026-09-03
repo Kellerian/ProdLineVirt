@@ -11,12 +11,12 @@
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
-    QCursor, QFont, QFontDatabase, QGradient,
-    QIcon, QImage, QKeySequence, QLinearGradient,
-    QPainter, QPalette, QPixmap, QRadialGradient,
-    QTransform)
-from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QMainWindow,
+from PySide6.QtGui import (QAction, QActionGroup, QBrush, QColor,
+    QConicalGradient, QCursor, QFont, QFontDatabase,
+    QGradient, QIcon, QImage, QKeySequence,
+    QLinearGradient, QPainter, QPalette, QPixmap,
+    QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QDockWidget, QFrame, QMainWindow,
     QMenu, QMenuBar, QScrollArea, QSizePolicy,
     QSpacerItem, QVBoxLayout, QWidget)
 
@@ -25,82 +25,6 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(800, 546)
-        MainWindow.setStyleSheet(u"QScrollBar {\n"
-"	background: none;\n"
-"	border: 1px;\n"
-"	margin: 1;\n"
-"	padding: 1;\n"
-"	width: 15px;\n"
-"}\n"
-"\n"
-"QScrollBar:handle {\n"
-"	border: 1px solid #FF17365D;\n"
-"	background: #226091;\n"
-"	border-radius: 3px;\n"
-"	min-height: 45px;\n"
-"	min-width: 15px;\n"
-"}\n"
-"\n"
-"QScrollBar:sub-line {\n"
-"	background: none;\n"
-"	border: none;\n"
-"	height: 0px;\n"
-"	padding: 0;\n"
-"	width: 0px;\n"
-"}\n"
-"\n"
-"QScrollBar:add-line {\n"
-"	background:  none;\n"
-"	border: none;\n"
-"	height: 0px;	\n"
-"	padding: 0;\n"
-"	width: 0px;\n"
-"}\n"
-"\n"
-"QMenuBar {\n"
-"	background-color: #ffffff;\n"
-"	color: #17365D;\n"
-"}\n"
-"\n"
-"QMenuBar::item {\n"
-"	background-color: transparent;\n"
-"	color: #17365D;\n"
-"	padding: 2px 8px;\n"
-"}\n"
-"\n"
-"QMenuBar::item:selected {\n"
-"	background-color: #226091;\n"
-"	color: #f0b321;\n"
-"}\n"
-"\n"
-"QMenuBar::item:pressed {\n"
-"	background-color: #226091;\n"
-"	color: #f0b321;\n"
-"}\n"
-"\n"
-"QMenu {\n"
-"	background-color: #f5f5f5;\n"
-"	color: #17365D;\n"
-"	border: 1px solid #17365D;\n"
-"}"
-                        "\n"
-"\n"
-"QMenu::separator {\n"
-"	height: 1px;\n"
-"	background: #17365D;\n"
-"	margin: 4px 8px;\n"
-"}\n"
-"\n"
-"QMenu::item {\n"
-"	background-color: transparent;\n"
-"	color: #17365D;\n"
-"	padding: 4px 24px 4px 8px;\n"
-"}\n"
-"\n"
-"QMenu::item:selected {\n"
-"	background-color: #226091;\n"
-"	color: #f0b321;\n"
-"}")
         self.acAddCamera = QAction(MainWindow)
         self.acAddCamera.setObjectName(u"acAddCamera")
         self.acAddPrinter = QAction(MainWindow)
@@ -151,23 +75,57 @@ class Ui_MainWindow(object):
         self.acControlClearCameras.setObjectName(u"acControlClearCameras")
         self.acControlClearScanners = QAction(MainWindow)
         self.acControlClearScanners.setObjectName(u"acControlClearScanners")
+        self.acResetLayout = QAction(MainWindow)
+        self.acResetLayout.setObjectName(u"acResetLayout")
+        self.themeActionGroup = QActionGroup(MainWindow)
+        self.themeActionGroup.setObjectName(u"themeActionGroup")
+        self.themeActionGroup.setExclusive(True)
+        self.acThemeSystem = QAction(self.themeActionGroup)
+        self.acThemeSystem.setObjectName(u"acThemeSystem")
+        self.acThemeSystem.setCheckable(True)
+        self.acThemeSystem.setChecked(True)
+        self.acThemeLight = QAction(self.themeActionGroup)
+        self.acThemeLight.setObjectName(u"acThemeLight")
+        self.acThemeLight.setCheckable(True)
+        self.acThemeDark = QAction(self.themeActionGroup)
+        self.acThemeDark.setObjectName(u"acThemeDark")
+        self.acThemeDark.setCheckable(True)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.horizontalLayout = QHBoxLayout(self.centralwidget)
-        self.horizontalLayout.setSpacing(1)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(1, 1, 1, 1)
-        self.scrollArea_2 = QScrollArea(self.centralwidget)
-        self.scrollArea_2.setObjectName(u"scrollArea_2")
-        self.scrollArea_2.setMinimumSize(QSize(290, 0))
-        self.scrollArea_2.setMaximumSize(QSize(290, 16777215))
-        self.scrollArea_2.setFrameShadow(QFrame.Plain)
-        self.scrollArea_2.setWidgetResizable(True)
+        self.centralLayout = QVBoxLayout(self.centralwidget)
+        self.centralLayout.setSpacing(0)
+        self.centralLayout.setObjectName(u"centralLayout")
+        self.centralLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollAreaCanvas = QScrollArea(self.centralwidget)
+        self.scrollAreaCanvas.setObjectName(u"scrollAreaCanvas")
+        self.scrollAreaCanvas.setFrameShadow(QFrame.Plain)
+        self.scrollAreaCanvas.setWidgetResizable(True)
+        self.scaDevices = QWidget()
+        self.scaDevices.setObjectName(u"scaDevices")
+        self.scaDevices.setGeometry(QRect(0, 0, 505, 520))
+        self.scrollAreaCanvas.setWidget(self.scaDevices)
+
+        self.centralLayout.addWidget(self.scrollAreaCanvas)
+
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.dockSidebar = QDockWidget(MainWindow)
+        self.dockSidebar.setObjectName(u"dockSidebar")
+        self.dockSidebar.setMinimumSize(QSize(280, 0))
+        self.dockSidebar.setFeatures(QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetFloatable)
+        self.dockSidebar.setAllowedAreas(Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        self.dockSidebarContents = QWidget()
+        self.dockSidebarContents.setObjectName(u"dockSidebarContents")
+        self.dockSidebarLayout = QVBoxLayout(self.dockSidebarContents)
+        self.dockSidebarLayout.setSpacing(0)
+        self.dockSidebarLayout.setObjectName(u"dockSidebarLayout")
+        self.dockSidebarLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollAreaSidebar = QScrollArea(self.dockSidebarContents)
+        self.scrollAreaSidebar.setObjectName(u"scrollAreaSidebar")
+        self.scrollAreaSidebar.setFrameShadow(QFrame.Plain)
+        self.scrollAreaSidebar.setWidgetResizable(True)
         self.scaTransporters = QWidget()
         self.scaTransporters.setObjectName(u"scaTransporters")
         self.scaTransporters.setGeometry(QRect(0, 0, 288, 520))
-        self.scaTransporters.setMinimumSize(QSize(280, 0))
-        self.scaTransporters.setMaximumSize(QSize(290, 16777215))
         self.verticalLayout = QVBoxLayout(self.scaTransporters)
         self.verticalLayout.setSpacing(3)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -183,30 +141,19 @@ class Ui_MainWindow(object):
         self.verticalLayout.addItem(self.verticalSpacer)
 
         self.verticalLayout.setStretch(1, 1)
-        self.scrollArea_2.setWidget(self.scaTransporters)
+        self.scrollAreaSidebar.setWidget(self.scaTransporters)
 
-        self.horizontalLayout.addWidget(self.scrollArea_2)
+        self.dockSidebarLayout.addWidget(self.scrollAreaSidebar)
 
-        self.scrollArea = QScrollArea(self.centralwidget)
-        self.scrollArea.setObjectName(u"scrollArea")
-        self.scrollArea.setFrameShadow(QFrame.Plain)
-        self.scrollArea.setWidgetResizable(True)
-        self.scaDevices = QWidget()
-        self.scaDevices.setObjectName(u"scaDevices")
-        self.scaDevices.setGeometry(QRect(0, 0, 505, 520))
-        self.scrollArea.setWidget(self.scaDevices)
-
-        self.horizontalLayout.addWidget(self.scrollArea)
-
-        self.horizontalLayout.setStretch(1, 2)
-        MainWindow.setCentralWidget(self.centralwidget)
+        self.dockSidebar.setWidget(self.dockSidebarContents)
+        MainWindow.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dockSidebar)
         self.menuBar = QMenuBar(MainWindow)
         self.menuBar.setObjectName(u"menuBar")
         self.menuBar.setGeometry(QRect(0, 0, 800, 22))
-        self.menu = QMenu(self.menuBar)
-        self.menu.setObjectName(u"menu")
         self.menu_2 = QMenu(self.menuBar)
         self.menu_2.setObjectName(u"menu_2")
+        self.menu = QMenu(self.menuBar)
+        self.menu.setObjectName(u"menu")
         self.menuControl = QMenu(self.menuBar)
         self.menuControl.setObjectName(u"menuControl")
         self.menuControlStart = QMenu(self.menuControl)
@@ -215,11 +162,19 @@ class Ui_MainWindow(object):
         self.menuControlStop.setObjectName(u"menuControlStop")
         self.menuControlClear = QMenu(self.menuControl)
         self.menuControlClear.setObjectName(u"menuControlClear")
+        self.menuView = QMenu(self.menuBar)
+        self.menuView.setObjectName(u"menuView")
         MainWindow.setMenuBar(self.menuBar)
 
         self.menuBar.addAction(self.menu_2.menuAction())
         self.menuBar.addAction(self.menu.menuAction())
         self.menuBar.addAction(self.menuControl.menuAction())
+        self.menuBar.addAction(self.menuView.menuAction())
+        self.menu_2.addAction(self.acOpen)
+        self.menu_2.addAction(self.acSaveAs)
+        self.menu_2.addAction(self.acSave)
+        self.menu_2.addSeparator()
+        self.menu_2.addAction(self.acClose)
         self.menu.addAction(self.acAddCamera)
         self.menu.addAction(self.acAddPrinter)
         self.menu.addAction(self.acAddScanner)
@@ -227,11 +182,6 @@ class Ui_MainWindow(object):
         self.menu.addAction(self.acAddTransporter)
         self.menu.addSeparator()
         self.menu.addAction(self.acAddGenerator)
-        self.menu_2.addAction(self.acOpen)
-        self.menu_2.addAction(self.acSaveAs)
-        self.menu_2.addAction(self.acSave)
-        self.menu_2.addSeparator()
-        self.menu_2.addAction(self.acClose)
         self.menuControl.addAction(self.menuControlStart.menuAction())
         self.menuControl.addAction(self.menuControlStop.menuAction())
         self.menuControl.addAction(self.menuControlClear.menuAction())
@@ -253,6 +203,11 @@ class Ui_MainWindow(object):
         self.menuControlClear.addAction(self.acControlClearPrinters)
         self.menuControlClear.addAction(self.acControlClearCameras)
         self.menuControlClear.addAction(self.acControlClearScanners)
+        self.menuView.addAction(self.acResetLayout)
+        self.menuView.addSeparator()
+        self.menuView.addAction(self.acThemeSystem)
+        self.menuView.addAction(self.acThemeLight)
+        self.menuView.addAction(self.acThemeDark)
 
         self.retranslateUi(MainWindow)
 
@@ -286,11 +241,17 @@ class Ui_MainWindow(object):
         self.acControlClearPrinters.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0440\u0438\u043d\u0442\u0435\u0440\u044b", None))
         self.acControlClearCameras.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u043c\u0435\u0440\u044b", None))
         self.acControlClearScanners.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043a\u0430\u043d\u0435\u0440\u044b", None))
-        self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
+        self.acResetLayout.setText(QCoreApplication.translate("MainWindow", u"\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0440\u0430\u0441\u043f\u043e\u043b\u043e\u0436\u0435\u043d\u0438\u0435", None))
+        self.acThemeSystem.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u043a \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u0435", None))
+        self.acThemeLight.setText(QCoreApplication.translate("MainWindow", u"\u0421\u0432\u0435\u0442\u043b\u0430\u044f", None))
+        self.acThemeDark.setText(QCoreApplication.translate("MainWindow", u"\u0422\u0451\u043c\u043d\u0430\u044f", None))
+        self.dockSidebar.setWindowTitle(QCoreApplication.translate("MainWindow", u"\u0411\u043e\u043a\u043e\u0432\u0430\u044f \u043f\u0430\u043d\u0435\u043b\u044c", None))
         self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u0424\u0430\u0439\u043b", None))
+        self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
         self.menuControl.setTitle(QCoreApplication.translate("MainWindow", u"\u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435", None))
         self.menuControlStart.setTitle(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u044c", None))
         self.menuControlStop.setTitle(QCoreApplication.translate("MainWindow", u"\u041e\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c", None))
         self.menuControlClear.setTitle(QCoreApplication.translate("MainWindow", u"\u041e\u0447\u0438\u0441\u0442\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435", None))
+        self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"\u0412\u0438\u0434", None))
     # retranslateUi
 

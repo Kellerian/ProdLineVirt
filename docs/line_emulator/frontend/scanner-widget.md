@@ -17,10 +17,11 @@
 
 | Элемент | Значение |
 |---------|----------|
-| Класс | `ScannerWidget(QWidget, Ui_Form)` |
-| Создание | `ScannerWidget(name: str, port_name: str = "")` — имя и опциональный предвыбор COM |
-| Размещение на холсте | `MainLineField.add_scanner` / меню «Добавить → Сканер» (подзадача **#5**, реализовано) |
-| Сохранение в JSON | `options()` / `load_options()` + секция `scanners` в `ConfigFile` (модель — **#2**, wiring в `MainLineField` — **#5**) |
+| Класс | `ScannerWidget(QWidget, Ui_Form, DeviceCardMixin)` |
+| Создание | `ScannerWidget(name: str, port_name: str = "", device_id: str \| None = None)` — имя, опциональный COM; `device_id` из JSON или `generate_device_id()` (**#4** UI modernization) |
+| Размещение на холсте | `MainLineField.add_scanner` / меню «Добавить → Сканер» |
+| Chrome / advanced | `DeviceCardMixin` — grip, delete, collapsible «Дополнительно» (**#5**, **#10**); см. [device-card.md](device-card.md) |
+| Сохранение в JSON | `options()` / `load_options()` + секция `scanners` в `ConfigFile`; поле `advanced_expanded` (**#10**) |
 
 Публичные атрибуты для связи с transport/generator (подзадача **#6**, реализовано):
 
@@ -76,12 +77,14 @@ sequenceDiagram
 
 | Компонент / поле | Роль |
 |------------------|------|
-| `Ui_Form` (`forms/Scanner.py`) | Макет: имя, COM combo, `tbRefreshPorts`, Run/Stop, `tbDelete`, ручной ввод, список очереди |
+| `Ui_Form` (`forms/Scanner.py`) | Макет: chrome header (имя, Run), ручной ввод, очередь, collapsible COM (**#10**) |
+| `DeviceCardMixin` | grip «≡», `deviceType`, `wire_advanced_panel` — [device-card.md](device-card.md) |
 | `delete_requested` | `Signal()` без аргументов — запрос удаления после подтверждения в `_on_delete_clicked` |
 | `_scanner` | `ScannerProxy` — мост в UI-поток, сигналы `scanned`, `open_failed` |
 | `_scheduler` | `CodeScheduler` — периодический вызов `send_data` |
 | `_params` | `ScannerParams` — параметры линии COM (baud, parity, suffix); задаётся `load_options` |
 | `name` | Текущее имя устройства на линии (синхронизируется при Run) |
+| `device_id` | Стабильный идентификатор карточки (`shortuuid`); совпадает с полем в `ScannerConfig` и ключом в `_device_widgets` (**#4**) |
 
 ### Константы отправки
 
@@ -89,7 +92,7 @@ sequenceDiagram
 |-----------|----------|--------|
 | `_SEND_BATCH_SIZE` | `1` | За один тик планировщика снимается один код с головы очереди |
 | `_SEND_INTERVAL_MS` | `0` | Per-code задержка отключена: код готов к отправке сразу после попадания в `model_in` |
-| `_COM_PORT_PLACEHOLDER` | `"Выберите порт"` | Первая строка `cbxComPort`, не считается выбранным портом |
+| `_COM_PORT_PLACEHOLDER` | `"Выберите порт"` | Первая строка `cbxComPort` в `wAdvanced`, не считается выбранным портом |
 
 В отличие от `CameraWidget`, у сканера **нет** `spInterval` / `spSize` в форме: интервал и размер пакета зафиксированы константами (мгновенная отправка по одному коду).
 
@@ -189,7 +192,9 @@ Callback `send_data`:
 
 ## COM-порт (`cbxComPort`) и обновление списка
 
-Список портов заполняется при создании виджета и по клику **`tbRefreshPorts`** (между combo и Run).
+Элементы COM находятся в **`wAdvanced`** (секция «Дополнительно»). При collapsed advanced combo и `tbRefreshPorts` скрыты, но значение порта сохраняется в JSON и восстанавливается при load.
+
+Список портов заполняется при создании виджета и по клику **`tbRefreshPorts`** (внутри advanced panel).
 
 `_on_refresh_ports_clicked()`:
 
@@ -252,16 +257,18 @@ def load_options(self, params: ScannerParams) -> None:
 
 def options(self) -> ScannerConfig:
     return ScannerConfig(
+        device_id=self.device_id,
         name=self.name,
         port_name=self._get_port_name(),
         config=self._params,
+        advanced_expanded=self.is_advanced_expanded(),
     )
 ```
 
 | Метод | Когда вызывается |
 |-------|------------------|
 | `load_options` | `_load_scanners` при `open_config` / `process_config` |
-| `options` | `save_configuration_to_file` в `MainLineField` |
+| `options` | `save_configuration_to_file` в `MainLineField` (включая `advanced_expanded`) |
 
 `port_name` в `options()` берётся из текущего combo (пустая строка, если выбран placeholder). Поля `ScannerParams` в UI пока не редактируются — значения по умолчанию из модели (#2); расширение формы — вне scope #4.
 
@@ -296,20 +303,20 @@ def options(self) -> ScannerConfig:
 
 ### Обновление combo (`setup_models`)
 
-При добавлении или загрузке сканера `MainLineField` вызывает `setup_models` у всех транспортёров и генераторов. Сканер регистрируется в `_device_data` по `id(widget)`; отображаемое имя — `device.name`. Пока транспортёр/генератор в Run, списки combo не перестраиваются.
+При добавлении или загрузке сканера `MainLineField` регистрирует виджет в `_device_widgets[device_id]` и вызывает `setup_models(self._device_widgets)` у всех транспортёров и генераторов. Внутри transport/generator `_device_data` — копия того же словаря `{device_id: widget}`; в combo колонка 0 — `device.name`, колонка 1 — `device_id` (скрыта через `setModelColumn(0)`). Пока транспортёр/генератор в Run, модели combo не перестраиваются, но реестр `_device_data` всё равно заменяется (без stale `device_id` после удаления устройства).
 
 ### Null guards (со стороны transport/generator)
 
-Если в combo не выбрано устройство или виджет отсутствует в `_device_data`, `set_from_model` / `set_to_model` пишут предупреждение в `UI_LOGGER` и не меняют ссылку. `send_data` транспортёра требует обе модели; генератора — `model_out`; иначе предупреждение и выход без передачи.
+Если в combo не выбрано устройство или `device_id` отсутствует в `_device_data`, `set_from_model` / `set_to_model` пишут предупреждение в `UI_LOGGER` и не меняют ссылку. `send_data` транспортёра требует обе модели; генератора — `model_out`; иначе предупреждение и выход без передачи.
 
-Обзор wiring и диаграмма — [line_emulator.md](../line_emulator.md) (раздел «Связь виджетов: Transport и Generator»).
+Обзор wiring, save/load `take_from`/`give_to` по `device_id` — [line_emulator.md](../line_emulator.md) (разделы «Стабильный device_id в виджетах» и «Связь виджетов: Transport и Generator»); поля `*Config` — [config.md](../config.md).
 
 ## Сравнение с `CameraWidget`
 
 | Аспект | CameraWidget | ScannerWidget |
 |--------|--------------|---------------|
 | Транспорт | TCP (`CameraProxy`) | COM (`ScannerProxy`) |
-| Подключение в UI | `leConnetionStr` (порт) | `cbxComPort` + `tbRefreshPorts` |
+| Подключение в UI | `leConnetionStr` в `wAdvanced` (TCP) | `cbxComPort` + `tbRefreshPorts` в `wAdvanced` (COM) |
 | Per-code интервал | `spInterval` (динамический) | `_SEND_INTERVAL_MS = 0` |
 | Размер пакета | `spSize` | `_SEND_BATCH_SIZE = 1` |
 | `lstData` DnD | Drop + processed drag out | DropOnly (приёмник) |
@@ -347,6 +354,7 @@ Unit-тесты Remove API / регрессии `clear_ui` (widget-delete-com-re
 
 ## Связанная документация
 
+- [device-card.md](device-card.md) — chrome header, collapsible «Дополнительно» (#10).
 - [scanner-ui.md](scanner-ui.md) — статический макет `Scanner.ui` (подзадача #3), включая `tbRefreshPorts` и `tbDelete`.
 - [widget-delete.md](widget-delete.md) — `tbDelete` / `delete_requested`, Remove API (#2–#3), unit-тесты (#4), docs (#5).
 - [scanner_serial.md](../scanner_serial.md) — `ScannerEmul`, `ScannerProxy`, `libs/serial_port` (подзадача #1).

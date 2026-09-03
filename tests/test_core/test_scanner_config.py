@@ -29,6 +29,7 @@ class TestScannerConfig(unittest.TestCase):
     def test_to_serial_port_config_maps_fields(self) -> None:
         """ScannerConfig builds SerialPortConfig with port and line params."""
         config = ScannerConfig(
+            device_id="scan-test-id",
             name="SCAN_1",
             port_name="COM7",
             config=ScannerParams(
@@ -62,6 +63,7 @@ class TestConfigFileScanners(unittest.TestCase):
         original = ConfigFile(
             scanners=[
                 ScannerConfig(
+                    device_id="scan-roundtrip-id",
                     name="SCAN_1",
                     port_name="COM3",
                     config=ScannerParams(),
@@ -91,6 +93,7 @@ class TestConfigFileScanners(unittest.TestCase):
         self.assertEqual(config.scanners, [])
         self.assertEqual(len(config.printers), 1)
         self.assertEqual(len(config.cameras), 1)
+        self.assertEqual(config.printers[0].device_id, config.canvas_order[0])
 
     def test_mixed_config_preserves_all_device_sections(self) -> None:
         """Full config keeps printers, cameras and scanners together."""

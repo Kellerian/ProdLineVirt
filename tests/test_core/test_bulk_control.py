@@ -99,12 +99,16 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
         self.generator = GeneratorWidget()
 
         self.window._device_widgets = {
-            id(self.printer): self.printer,
-            id(self.camera): self.camera,
-            id(self.scanner): self.scanner,
+            self.printer.device_id: self.printer,
+            self.camera.device_id: self.camera,
+            self.scanner.device_id: self.scanner,
         }
-        self.window._transporter_widgets = {id(self.transporter): self.transporter}
-        self.window._generator_widgets = {id(self.generator): self.generator}
+        self.window._transporter_widgets = {
+            self.transporter.device_id: self.transporter
+        }
+        self.window._generator_widgets = {
+            self.generator.device_id: self.generator
+        }
 
     def test_bulk_start_all_order(self) -> None:
         """Start all: devices before transporters before generators."""

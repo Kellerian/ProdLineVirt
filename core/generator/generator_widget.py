@@ -7,6 +7,8 @@ from PySide6.QtWidgets import QComboBox, QMessageBox, QWidget
 
 from core.generator.data import CodeType, GeneratorConfig
 from core.generator.generators import get_new_code
+from core.main_ui.config_migration import generate_device_id
+from core.main_ui.device_card import DeviceCardMixin, DeviceZone
 from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
@@ -17,20 +19,34 @@ from libs.loggers import UI_LOGGER
 from libs.model_processing import create_code_item
 
 
-class GeneratorWidget(QWidget, Ui_Form):
+class GeneratorWidget(QWidget, Ui_Form, DeviceCardMixin):
     """Виджет генератора кодов на холсте Line Emulator."""
 
     delete_requested = Signal()
 
-    def __init__(self):
+    def __init__(self, device_id: str | None = None) -> None:
         super().__init__()
         self.setupUi(self)
         self._log = getLogger(UI_LOGGER)
-        self.name = f"GW_{id(self)}"
+        self.device_id = device_id or generate_device_id()
+        self.name = f"GW_{self.device_id[:8]}"
+        self._device_header = self.mount_device_card_header(
+            device_id=self.device_id,
+            device_type="generator",
+            zone=DeviceZone.SIDEBAR,
+            row_layout=self.horizontalLayout,
+            delete_button=self.tbDelete,
+        )
+        self.tbDelete = self._device_header.delete_button
+        self._device_header.delete_clicked.connect(self._on_delete_clicked)
+        self.wire_advanced_panel(self.tbAdvanced, self.wAdvanced)
+        self.leName.setText(self.name)
         self._setup_icon(self.tbRun.isChecked())
         self._scheduler = CodeScheduler()
         self._last_generated_at: float | None = None
-        self._device_data: dict[int, CameraWidget | PrinterWidget | ScannerWidget] = {}
+        self._device_data: dict[
+            str, CameraWidget | PrinterWidget | ScannerWidget
+        ] = {}
         self.model_out: QStandardItemModel | None = None
         self.code_type: CodeType = CodeType.UKZ
         self.gtin: str = self.leGtin.text().strip()
@@ -47,7 +63,6 @@ class GeneratorWidget(QWidget, Ui_Form):
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.start)
-        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.spInterval.valueChanged.connect(self.set_interval_settings)
         self.cbxTo.currentIndexChanged.connect(self.set_to_model)
         self.cbxCodeType.currentIndexChanged.connect(self.set_code_type)
@@ -86,8 +101,7 @@ class GeneratorWidget(QWidget, Ui_Form):
         data = model.data(index, Qt.ItemDataRole.DisplayRole)
         if data is None:
             return None
-        widget_id = int(data)
-        widget = self._device_data.get(widget_id)
+        widget = self._device_data.get(str(data))
         return widget
 
     def set_to_model(self, idx: int | None = None):
@@ -100,8 +114,9 @@ class GeneratorWidget(QWidget, Ui_Form):
         self.model_out = widget.model_in
         self._log.info(f"ПЕРЕДАЁМ В {widget.name}")
 
-    def set_to_ids(self, take_to: int):
-        self.set_cbx_current_value(self.cbxTo, str(take_to))
+    def set_to_ids(self, give_to_id: str) -> None:
+        """Select target device by stable ``device_id``."""
+        self.set_cbx_current_value(self.cbxTo, give_to_id)
 
     def set_generator_type(self, generator_type: str):
         try:
@@ -141,10 +156,10 @@ class GeneratorWidget(QWidget, Ui_Form):
         to_model = QStandardItemModel()
         for device in self._device_data.values():
             dev_name = device.name
-            dev_id = id(device)
+            dev_id = device.device_id
             if isinstance(device, (CameraWidget, ScannerWidget)):
                 to_model.appendRow(
-                    [QStandardItem(dev_name), QStandardItem(str(dev_id))]
+                    [QStandardItem(dev_name), QStandardItem(dev_id)]
                 )
         return to_model
 
@@ -153,11 +168,16 @@ class GeneratorWidget(QWidget, Ui_Form):
         cur_wd = self._get_model_current_widget(cbx, cbx.currentIndex())
         cbx.setModel(model)
         cbx.setModelColumn(0)
-        self.set_cbx_current_value(cbx, str(id(cur_wd)))
+        self.set_cbx_current_value(
+            cbx, cur_wd.device_id if cur_wd is not None else ""
+        )
         cbx.blockSignals(False)
 
     def setup_models(
-        self, device_widgets: dict[int, CameraWidget | PrinterWidget | ScannerWidget]
+        self,
+        device_widgets: dict[
+            str, CameraWidget | PrinterWidget | ScannerWidget
+        ],
     ) -> None:
         """Replace the device registry and rebuild the target combo when stopped.
 
@@ -165,7 +185,7 @@ class GeneratorWidget(QWidget, Ui_Form):
         The combo model is rebuilt only when the generator is not running.
 
         Args:
-            device_widgets: Current device widgets keyed by ``id(widget)``.
+            device_widgets: Current device widgets keyed by ``device_id``.
         """
         self._device_data = dict(device_widgets)
         if self.tbRun.isChecked():
@@ -173,8 +193,9 @@ class GeneratorWidget(QWidget, Ui_Form):
         to_model = self.get_data_models()
         self._set_cbx_model(self.cbxTo, to_model)
 
-    def set_source_ids(self, give_to: int):
-        self.set_cbx_current_value(self.cbxTo, str(give_to))
+    def set_source_ids(self, give_to_id: str) -> None:
+        """Select target device by stable ``device_id``."""
+        self.set_cbx_current_value(self.cbxTo, give_to_id)
 
     def set_interval(self, value: int):
         self.spInterval.setValue(value)
@@ -222,8 +243,10 @@ class GeneratorWidget(QWidget, Ui_Form):
             self.cbxTo, self.cbxTo.currentIndex()
         )
         return GeneratorConfig(
+            device_id=self.device_id,
             generator_type=generator_type.name,
             gtin=gtin,
-            give_to=to_wd.name,
-            interval=self.spInterval.value()
+            give_to=to_wd.device_id if to_wd is not None else "",
+            interval=self.spInterval.value(),
+            advanced_expanded=self.is_advanced_expanded(),
         )

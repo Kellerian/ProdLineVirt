@@ -4,12 +4,16 @@ from pydantic import BaseModel, ConfigDict
 
 
 class GeneratorConfig(BaseModel):
+    """Persisted configuration of one code generator widget."""
+
     model_config = ConfigDict(strict=True)
 
+    device_id: str
     generator_type: str
     gtin: str = ''
     give_to: str
     interval: int = 250
+    advanced_expanded: bool = False
 
 
 class CodeType(Enum):

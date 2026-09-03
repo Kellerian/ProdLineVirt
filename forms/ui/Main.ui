@@ -13,183 +13,25 @@
   <property name="windowTitle">
    <string>Эмулятор оборудования линии</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">QScrollBar {
-	background: none;
-	border: 1px;
-	margin: 1;
-	padding: 1;
-	width: 15px;
-}
-
-QScrollBar:handle {
-	border: 1px solid #FF17365D;
-	background: #226091;
-	border-radius: 3px;
-	min-height: 45px;
-	min-width: 15px;
-}
-
-QScrollBar:sub-line {
-	background: none;
-	border: none;
-	height: 0px;
-	padding: 0;
-	width: 0px;
-}
-
-QScrollBar:add-line {
-	background:  none;
-	border: none;
-	height: 0px;	
-	padding: 0;
-	width: 0px;
-}
-
-QMenuBar {
-	background-color: #ffffff;
-	color: #17365D;
-}
-
-QMenuBar::item {
-	background-color: transparent;
-	color: #17365D;
-	padding: 2px 8px;
-}
-
-QMenuBar::item:selected {
-	background-color: #226091;
-	color: #f0b321;
-}
-
-QMenuBar::item:pressed {
-	background-color: #226091;
-	color: #f0b321;
-}
-
-QMenu {
-	background-color: #f5f5f5;
-	color: #17365D;
-	border: 1px solid #17365D;
-}
-
-QMenu::separator {
-	height: 1px;
-	background: #17365D;
-	margin: 4px 8px;
-}
-
-QMenu::item {
-	background-color: transparent;
-	color: #17365D;
-	padding: 4px 24px 4px 8px;
-}
-
-QMenu::item:selected {
-	background-color: #226091;
-	color: #f0b321;
-}</string>
-  </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
+   <layout class="QVBoxLayout" name="centralLayout">
     <property name="spacing">
-     <number>1</number>
+     <number>0</number>
     </property>
     <property name="leftMargin">
-     <number>1</number>
+     <number>0</number>
     </property>
     <property name="topMargin">
-     <number>1</number>
+     <number>0</number>
     </property>
     <property name="rightMargin">
-     <number>1</number>
+     <number>0</number>
     </property>
     <property name="bottomMargin">
-     <number>1</number>
+     <number>0</number>
     </property>
     <item>
-     <widget class="QScrollArea" name="scrollArea_2">
-      <property name="minimumSize">
-       <size>
-        <width>290</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>290</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Plain</enum>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="scaTransporters">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>288</width>
-         <height>520</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>280</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>290</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1">
-        <property name="spacing">
-         <number>3</number>
-        </property>
-        <property name="leftMargin">
-         <number>3</number>
-        </property>
-        <property name="topMargin">
-         <number>3</number>
-        </property>
-        <property name="rightMargin">
-         <number>3</number>
-        </property>
-        <property name="bottomMargin">
-         <number>3</number>
-        </property>
-        <item>
-         <layout class="QVBoxLayout" name="transporters_layout">
-          <property name="spacing">
-           <number>1</number>
-          </property>
-         </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-    <item>
-     <widget class="QScrollArea" name="scrollArea">
+     <widget class="QScrollArea" name="scrollAreaCanvas">
       <property name="frameShadow">
        <enum>QFrame::Plain</enum>
       </property>
@@ -210,6 +52,102 @@ QMenu::item:selected {
     </item>
    </layout>
   </widget>
+  <widget class="QDockWidget" name="dockSidebar">
+   <property name="minimumSize">
+    <size>
+     <width>280</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>Боковая панель</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetFloatable</set>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockSidebarContents">
+    <layout class="QVBoxLayout" name="dockSidebarLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QScrollArea" name="scrollAreaSidebar">
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+       <property name="widgetResizable">
+        <bool>true</bool>
+       </property>
+       <widget class="QWidget" name="scaTransporters">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>288</width>
+          <height>520</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1">
+         <property name="spacing">
+          <number>3</number>
+         </property>
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <layout class="QVBoxLayout" name="transporters_layout">
+           <property name="spacing">
+            <number>1</number>
+           </property>
+          </layout>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
@@ -219,6 +157,16 @@ QMenu::item:selected {
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Файл</string>
+    </property>
+    <addaction name="acOpen"/>
+    <addaction name="acSaveAs"/>
+    <addaction name="acSave"/>
+    <addaction name="separator"/>
+    <addaction name="acClose"/>
+   </widget>
    <widget class="QMenu" name="menu">
     <property name="title">
      <string>Добавить</string>
@@ -230,16 +178,6 @@ QMenu::item:selected {
     <addaction name="acAddTransporter"/>
     <addaction name="separator"/>
     <addaction name="acAddGenerator"/>
-   </widget>
-   <widget class="QMenu" name="menu_2">
-    <property name="title">
-     <string>Файл</string>
-    </property>
-    <addaction name="acOpen"/>
-    <addaction name="acSaveAs"/>
-    <addaction name="acSave"/>
-    <addaction name="separator"/>
-    <addaction name="acClose"/>
    </widget>
    <widget class="QMenu" name="menuControl">
     <property name="title">
@@ -282,9 +220,20 @@ QMenu::item:selected {
     <addaction name="menuControlStop"/>
     <addaction name="menuControlClear"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>Вид</string>
+    </property>
+    <addaction name="acResetLayout"/>
+    <addaction name="separator"/>
+    <addaction name="acThemeSystem"/>
+    <addaction name="acThemeLight"/>
+    <addaction name="acThemeDark"/>
+   </widget>
    <addaction name="menu_2"/>
    <addaction name="menu"/>
    <addaction name="menuControl"/>
+   <addaction name="menuView"/>
   </widget>
   <action name="acAddCamera">
    <property name="text">
@@ -411,6 +360,43 @@ QMenu::item:selected {
     <string>Сканеры</string>
    </property>
   </action>
+  <action name="acResetLayout">
+   <property name="text">
+    <string>Сбросить расположение</string>
+   </property>
+  </action>
+  <actiongroup name="themeActionGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+   <action name="acThemeSystem">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>Как в системе</string>
+    </property>
+   </action>
+   <action name="acThemeLight">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>Светлая</string>
+    </property>
+   </action>
+   <action name="acThemeDark">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>Тёмная</string>
+    </property>
+   </action>
+  </actiongroup>
  </widget>
  <resources/>
  <connections/>

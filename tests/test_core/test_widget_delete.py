@@ -105,7 +105,7 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
     def test_remove_stopped_printer_from_registry_and_layout(self) -> None:
         """Stopped printer is removed from ``_device_widgets`` and devices layout."""
-        printer_id = id(self.printer)
+        printer_id = self.printer.device_id
         with patch.object(self.printer, "run") as mock_run:
             self.window._remove_device(self.printer)
 
@@ -117,7 +117,7 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
     def test_remove_stopped_camera_from_registry_and_layout(self) -> None:
         """Stopped camera is removed from ``_device_widgets`` and devices layout."""
-        camera_id = id(self.camera)
+        camera_id = self.camera.device_id
         with patch.object(self.camera, "run") as mock_run:
             self.window._remove_device(self.camera)
 
@@ -129,7 +129,7 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
     def test_remove_stopped_scanner_from_registry_and_layout(self) -> None:
         """Stopped scanner is removed from ``_device_widgets`` and devices layout."""
-        scanner_id = id(self.scanner)
+        scanner_id = self.scanner.device_id
         with (
             patch.object(self.scanner, "run") as mock_run,
             patch.object(self.window, "_sync_scanner_name_generator") as mock_sync,
@@ -145,7 +145,7 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
     def test_remove_transporter_from_registry(self) -> None:
         """Transporter is removed from ``_transporter_widgets``."""
-        transport_id = id(self.transporter)
+        transport_id = self.transporter.device_id
         with patch.object(self.transporter, "run") as mock_run:
             self.window._remove_transporter(self.transporter)
 
@@ -154,7 +154,7 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
     def test_remove_generator_from_registry(self) -> None:
         """Generator is removed from ``_generator_widgets``."""
-        generator_id = id(self.generator)
+        generator_id = self.generator.device_id
         with patch.object(self.generator, "run") as mock_run:
             self.window._remove_generator(self.generator)
 
@@ -163,7 +163,7 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
     def test_remove_device_clears_stale_keys_in_device_data(self) -> None:
         """After device removal, transporter/generator ``_device_data`` has no stale id."""
-        printer_id = id(self.printer)
+        printer_id = self.printer.device_id
         self.assertIn(printer_id, self.transporter._device_data)
         self.assertIn(printer_id, self.generator._device_data)
 
@@ -172,12 +172,12 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
         self.assertNotIn(printer_id, self.transporter._device_data)
         self.assertNotIn(printer_id, self.generator._device_data)
-        self.assertIn(id(self.camera), self.transporter._device_data)
-        self.assertIn(id(self.scanner), self.transporter._device_data)
+        self.assertIn(self.camera.device_id, self.transporter._device_data)
+        self.assertIn(self.scanner.device_id, self.transporter._device_data)
 
     def test_remove_device_clears_stale_keys_while_transporter_running(self) -> None:
         """Running transporter still drops removed device ids from ``_device_data``."""
-        printer_id = id(self.printer)
+        printer_id = self.printer.device_id
         _set_run_checked(self.transporter, True)
 
         with patch.object(self.printer, "run"):

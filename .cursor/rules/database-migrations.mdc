@@ -1,0 +1,39 @@
+---
+description: Миграции схемы PostgreSQL через Alembic; DB_VERSION устарел
+alwaysApply: true
+---
+
+# Миграции схемы БД
+
+## `client_info.DB_VERSION` — DEPRECATED
+
+- **`DB_VERSION` устарел** — не используй и **не изменяй** в новых задачах.
+- Это legacy-механизм integer-версии схемы (`dmc_db_version`, legacy bridge). Канонический способ версионирования схемы — **ревизии Alembic**.
+- Константа в `client_info.py` может оставаться для обратной совместимости со старым кодом provisioning; **новую логику на неё не завязывай**.
+
+## Изменения структуры БД — только Alembic
+
+- Каноническая ORM-схема: `apps/backend/db_schema/models/`.
+- Provisioning и миграции: `apps/backend/db_provisioning/`.
+- Папка `db_migration/` **устарела** — не используй (`db_migration/DEPRECATED.md`).
+
+При любом изменении моделей ORM или структуры таблиц:
+
+1. Правки в `apps/backend/db_schema/models/` (и при необходимости `non_orm_objects.md`).
+2. **Создать Alembic-ревизию** в `apps/backend/db_provisioning/alembic/versions/`:
+
+   ```powershell
+   $env:ALEMBIC_DATABASE_URL = "postgresql+psycopg://USER:PASSWORD@HOST:5432/TEST_DB"
+   alembic -c apps/backend/db_provisioning/alembic/alembic.ini revision -m "описание"
+   ```
+
+3. Реализовать `upgrade()` / `downgrade()`; при `--autogenerate` проверить functions/triggers вручную.
+4. Обновить документацию по provisioning при необходимости (`docs/Server/database_provisioning.md`).
+5. Тесты: `tests/test_apps/test_backend/test_db_provisioning/`.
+
+## Чего не делать
+
+- ❌ Менять или опираться на `DB_VERSION` в новом коде.
+- ❌ Править ORM-модели без миграции Alembic.
+- ❌ Использовать `db_migration/migration/` или `mainMigration.py`.
+- ❌ Менять схему только в `apps/api/client/db/db_models/` — это re-export ORM из `db_schema`.

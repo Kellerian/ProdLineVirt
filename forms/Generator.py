@@ -25,187 +25,62 @@ class Ui_Form(object):
             Form.setObjectName(u"Form")
         Form.resize(280, 130)
         Form.setMinimumSize(QSize(200, 130))
-        Form.setMaximumSize(QSize(280, 130))
-        Form.setStyleSheet(u"QToolButton {\n"
-"    qproperty-alignment: AlignCenter;\n"
-"	border: 1px solid #FF17365D;\n"
-"    border-radius: 3px;\n"
-"	background-color: #226091;\n"
-"	padding: 3px;\n"
-"	color: #FFFFFF;\n"
-"	font: bold 12pt \"DejaVu Sans Mono\";\n"
-"}\n"
-"\n"
-"QCheckBox {\n"
-"	font: bold 10pt \"DejaVu Sans Mono\";\n"
-"}\n"
-"\n"
-"QLineEdit {\n"
-"	font: 10pt \"DejaVu Sans Mono\";\n"
-"}\n"
-"\n"
-"QLabel {\n"
-"	font: bold 10pt \"DejaVu Sans Mono\";\n"
-"}\n"
-"\n"
-"QToolButton:hover {\n"
-"	color: #f0b321;\n"
-"}\n"
-"\n"
-"QListView {\n"
-"	font: 8pt \"DejaVu Sans Mono\";\n"
-"}\n"
-"\n"
-"QToolButton:pressed,\n"
-"QToolButton:checked {\n"
-"	color: #f0b321;\n"
-"	background-color: #19466a;\n"
-"	border: 2px solid #f0b321;\n"
-"}\n"
-"\n"
-"QSpinBox {\n"
-"    qproperty-alignment: AlignCenter;\n"
-"	border: 1px solid #FF17365D;\n"
-"	color: #f0b321;\n"
-"	background-color: #226091;\n"
-"	border-radius: 3px;\n"
-"	selection-background-color:#19466a;\n"
-"	selection-color: #f0b321;\n"
-"	font: bold 10pt \"DejaVu Sans Mono\";\n"
-"}\n"
-"\n"
-"QSpinBox::up-"
-                        "button { subcontrol-origin: content;  subcontrol-position: right;  width:20px; height: 20px; }\n"
-"QSpinBox::down-button {subcontrol-origin: content; subcontrol-position: left;  width:20px; height: 20px; }\n"
-"\n"
-"QComboBox {\n"
-"    border: 1px solid #17365D;\n"
-"    border-radius: 3px;\n"
-"	font: bold 10pt \"DejaVu Sans Mono\";\n"
-"	color: #f0b321;\n"
-"    background-color: #226091;\n"
-"	padding: 5px;\n"
-"}\n"
-"\n"
-"QComboBox:!editable:on {\n"
-"    color: #f0b321;\n"
-"	background-color: #19466a;\n"
-"	border: 1px solid #f0b321;\n"
-"}\n"
-"\n"
-"QComboBox:on {\n"
-"    padding-top: 3px;\n"
-"    padding-left: 4px;\n"
-"}\n"
-"\n"
-"QComboBox::drop-down {\n"
-"    subcontrol-origin: padding;\n"
-"    subcontrol-position: right;\n"
-"    width: 30px;\n"
-"	background-color: #19466a;\n"
-"    border-left-width: 1px;\n"
-"    border-left-color: #17365D;\n"
-"    border-left-style: solid;\n"
-"    border-top-right-radius: 5px;\n"
-"    border-bottom-right-radius: 5px;\n"
-"}\n"
-"\n"
-"QComboBox::down-arrow:on {\n"
-"    top: 1px;\n"
-""
-                        "    left: 1px;\n"
-"}\n"
-"\n"
-"QComboBox QAbstractItemView {\n"
-"    selection-background-color: #f0b321;\n"
-"	selection-color: #19466a;\n"
-"	color: #f0b321;\n"
-"	background-color: #19466a;\n"
-"	border: 2px solid #f0b321;\n"
-"}\n"
-"\n"
-"QComboBox::item {\n"
-"	color: #f0b321;\n"
-"	background-color: #19466a;\n"
-"}\n"
-"\n"
-"QComboBox::item:hover {\n"
-"	background-color: #226091;\n"
-"}\n"
-"\n"
-"QComboBox::item:selected {\n"
-"	background-color: #f0b321;\n"
-"	color: #19466a;\n"
-"}\n"
-"\n"
-"QComboBox QToolTip {\n"
-"    font: bold 10pt \"DejaVu Sans Mono\";\n"
-"	color: #f0b321;\n"
-"	background-color: #19466a;\n"
-"	border: 2px solid #f0b321;\n"
-"    border-radius: 3px;\n"
-"}\n"
-"\n"
-"QComboBox#cbxProduct QAbstractItemView {\n"
-"	min-width: 800px;\n"
-"}\n"
-"\n"
-"QScrollBar {\n"
-"	background: none;\n"
-"	border: 1px;\n"
-"	margin: 1;\n"
-"	padding: 1;\n"
-"	width: 15px;\n"
-"}\n"
-"\n"
-"QScrollBar:handle {\n"
-"	border: 1px solid #FF17365D;\n"
-"	background: #226091;\n"
-"	border-radius: 3px;\n"
-"	min-height: 45px;\n"
-"	min-width:"
-                        " 15px;\n"
-"}\n"
-"\n"
-"QScrollBar:sub-line {\n"
-"	background: none;\n"
-"	border: none;\n"
-"	height: 0px;\n"
-"	padding: 0;\n"
-"	width: 0px;\n"
-"}\n"
-"\n"
-"QScrollBar:add-line {\n"
-"	background:  none;\n"
-"	border: none;\n"
-"	height: 0px;	\n"
-"	padding: 0;\n"
-"	width: 0px;\n"
-"}\n"
-"\n"
-"QWidget#Form {\n"
-"	border: 1px solid #17365D;\n"
-"	border-radius: 3px;\n"
-"}")
+        Form.setMaximumSize(QSize(280, 16777215))
         self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setSpacing(1)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(2, 2, 2, 2)
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setSpacing(1)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.leName = QLineEdit(Form)
+        self.leName.setObjectName(u"leName")
+        self.leName.setMaxLength(25)
+
+        self.horizontalLayout.addWidget(self.leName)
+
+        self.tbRun = QToolButton(Form)
+        self.tbRun.setObjectName(u"tbRun")
+        self.tbRun.setMinimumSize(QSize(28, 28))
+        self.tbRun.setMaximumSize(QSize(28, 28))
+        self.tbRun.setCheckable(True)
+
+        self.horizontalLayout.addWidget(self.tbRun)
+
+        self.tbDelete = QToolButton(Form)
+        self.tbDelete.setObjectName(u"tbDelete")
+        self.tbDelete.setMinimumSize(QSize(28, 28))
+        self.tbDelete.setMaximumSize(QSize(28, 28))
+
+        self.horizontalLayout.addWidget(self.tbDelete)
+
+        self.horizontalLayout.setStretch(0, 4)
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.tbAdvanced = QToolButton(Form)
+        self.tbAdvanced.setObjectName(u"tbAdvanced")
+        self.tbAdvanced.setCheckable(True)
+        self.tbAdvanced.setChecked(False)
+
+        self.verticalLayout.addWidget(self.tbAdvanced)
+
+        self.wAdvanced = QWidget(Form)
+        self.wAdvanced.setObjectName(u"wAdvanced")
+        self.wAdvanced.setVisible(False)
+        self.verticalLayoutAdvanced = QVBoxLayout(self.wAdvanced)
+        self.verticalLayoutAdvanced.setSpacing(1)
+        self.verticalLayoutAdvanced.setObjectName(u"verticalLayoutAdvanced")
+        self.verticalLayoutAdvanced.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setSpacing(1)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
-        self.label_4 = QLabel(Form)
+        self.label_4 = QLabel(self.wAdvanced)
         self.label_4.setObjectName(u"label_4")
-        font = QFont()
-        font.setFamilies([u"DejaVu Sans Mono"])
-        font.setPointSize(10)
-        font.setBold(True)
-        font.setItalic(False)
-        self.label_4.setFont(font)
 
         self.horizontalLayout_6.addWidget(self.label_4)
 
-        self.spInterval = QSpinBox(Form)
+        self.spInterval = QSpinBox(self.wAdvanced)
         self.spInterval.setObjectName(u"spInterval")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -225,85 +100,57 @@ class Ui_Form(object):
 
         self.horizontalLayout_6.addWidget(self.spInterval)
 
-        self.tbRun = QToolButton(Form)
-        self.tbRun.setObjectName(u"tbRun")
-        self.tbRun.setMinimumSize(QSize(28, 28))
-        self.tbRun.setMaximumSize(QSize(28, 28))
-        font1 = QFont()
-        font1.setFamilies([u"DejaVu Sans Mono"])
-        font1.setPointSize(12)
-        font1.setBold(True)
-        font1.setItalic(False)
-        self.tbRun.setFont(font1)
-        self.tbRun.setIconSize(QSize(36, 36))
-        self.tbRun.setCheckable(True)
-        self.tbRun.setChecked(False)
-
-        self.horizontalLayout_6.addWidget(self.tbRun)
-
-        self.tbDelete = QToolButton(Form)
-        self.tbDelete.setObjectName(u"tbDelete")
-        self.tbDelete.setMinimumSize(QSize(28, 28))
-        self.tbDelete.setMaximumSize(QSize(28, 28))
-        self.tbDelete.setFont(font1)
-        self.tbDelete.setIconSize(QSize(16, 16))
-
-        self.horizontalLayout_6.addWidget(self.tbDelete)
-
         self.horizontalLayout_6.setStretch(0, 1)
         self.horizontalLayout_6.setStretch(1, 1)
 
-        self.verticalLayout.addLayout(self.horizontalLayout_6)
+        self.verticalLayoutAdvanced.addLayout(self.horizontalLayout_6)
 
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setSpacing(1)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_5 = QLabel(Form)
+        self.horizontalLayout_type = QHBoxLayout()
+        self.horizontalLayout_type.setSpacing(1)
+        self.horizontalLayout_type.setObjectName(u"horizontalLayout_type")
+        self.label_5 = QLabel(self.wAdvanced)
         self.label_5.setObjectName(u"label_5")
-        self.label_5.setFont(font)
 
-        self.horizontalLayout.addWidget(self.label_5)
+        self.horizontalLayout_type.addWidget(self.label_5)
 
-        self.cbxCodeType = QComboBox(Form)
+        self.cbxCodeType = QComboBox(self.wAdvanced)
         self.cbxCodeType.setObjectName(u"cbxCodeType")
         self.cbxCodeType.setSizeAdjustPolicy(QComboBox.AdjustToContents)
 
-        self.horizontalLayout.addWidget(self.cbxCodeType)
+        self.horizontalLayout_type.addWidget(self.cbxCodeType)
 
-        self.horizontalLayout.setStretch(1, 1)
+        self.horizontalLayout_type.setStretch(1, 1)
 
-        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayoutAdvanced.addLayout(self.horizontalLayout_type)
 
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setSpacing(1)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.label_6 = QLabel(Form)
+        self.horizontalLayout_to = QHBoxLayout()
+        self.horizontalLayout_to.setSpacing(1)
+        self.horizontalLayout_to.setObjectName(u"horizontalLayout_to")
+        self.label_6 = QLabel(self.wAdvanced)
         self.label_6.setObjectName(u"label_6")
-        self.label_6.setFont(font)
 
-        self.horizontalLayout_2.addWidget(self.label_6)
+        self.horizontalLayout_to.addWidget(self.label_6)
 
-        self.cbxTo = QComboBox(Form)
+        self.cbxTo = QComboBox(self.wAdvanced)
         self.cbxTo.setObjectName(u"cbxTo")
         self.cbxTo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
 
-        self.horizontalLayout_2.addWidget(self.cbxTo)
+        self.horizontalLayout_to.addWidget(self.cbxTo)
 
-        self.horizontalLayout_2.setStretch(1, 1)
+        self.horizontalLayout_to.setStretch(1, 1)
 
-        self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.verticalLayoutAdvanced.addLayout(self.horizontalLayout_to)
 
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setSpacing(1)
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.horizontalLayout_3.setContentsMargins(-1, 0, 0, 0)
-        self.label_7 = QLabel(Form)
+        self.horizontalLayout_gtin = QHBoxLayout()
+        self.horizontalLayout_gtin.setSpacing(1)
+        self.horizontalLayout_gtin.setObjectName(u"horizontalLayout_gtin")
+        self.horizontalLayout_gtin.setContentsMargins(-1, 0, 0, 0)
+        self.label_7 = QLabel(self.wAdvanced)
         self.label_7.setObjectName(u"label_7")
-        self.label_7.setFont(font)
 
-        self.horizontalLayout_3.addWidget(self.label_7)
+        self.horizontalLayout_gtin.addWidget(self.label_7)
 
-        self.leGtin = QLineEdit(Form)
+        self.leGtin = QLineEdit(self.wAdvanced)
         self.leGtin.setObjectName(u"leGtin")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
@@ -315,15 +162,15 @@ class Ui_Form(object):
         self.leGtin.setMaxLength(14)
         self.leGtin.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout_3.addWidget(self.leGtin)
+        self.horizontalLayout_gtin.addWidget(self.leGtin)
 
-        self.horizontalLayout_3.setStretch(1, 1)
+        self.horizontalLayout_gtin.setStretch(1, 1)
 
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.verticalLayoutAdvanced.addLayout(self.horizontalLayout_gtin)
 
-        self.verticalLayout.setStretch(0, 1)
-        self.verticalLayout.setStretch(1, 1)
-        self.verticalLayout.setStretch(2, 1)
+
+        self.verticalLayout.addWidget(self.wAdvanced)
+
 
         self.retranslateUi(Form)
 
@@ -332,13 +179,15 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
-        self.label_4.setText(QCoreApplication.translate("Form", u"\u041d\u041e\u0412\u042b\u0419 \u041a\u041e\u0414 \u041a\u0410\u0416\u0414\u042b\u0415:", None))
-        self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
+        self.leName.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435", None))
         self.tbRun.setText(QCoreApplication.translate("Form", u"R", None))
 #if QT_CONFIG(tooltip)
         self.tbDelete.setToolTip(QCoreApplication.translate("Form", u"\u0423\u0434\u0430\u043b\u0438\u0442\u044c", None))
 #endif // QT_CONFIG(tooltip)
         self.tbDelete.setText(QCoreApplication.translate("Form", u"X", None))
+        self.tbAdvanced.setText(QCoreApplication.translate("Form", u"\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u043e", None))
+        self.label_4.setText(QCoreApplication.translate("Form", u"\u041d\u041e\u0412\u042b\u0419 \u041a\u041e\u0414 \u041a\u0410\u0416\u0414\u042b\u0415:", None))
+        self.spInterval.setSuffix(QCoreApplication.translate("Form", u" \u043c\u0441", None))
         self.label_5.setText(QCoreApplication.translate("Form", u" \u0424:", None))
         self.label_6.setText(QCoreApplication.translate("Form", u" \u0412:", None))
         self.label_7.setText(QCoreApplication.translate("Form", u" G:", None))

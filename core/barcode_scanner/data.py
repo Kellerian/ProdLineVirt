@@ -20,9 +20,11 @@ class ScannerConfig(BaseModel):
 
     model_config = ConfigDict(strict=True)
 
+    device_id: str
     name: str
     port_name: str
     config: ScannerParams
+    advanced_expanded: bool = False
 
     def to_serial_port_config(self) -> SerialPortConfig:
         """Build COM-port settings for ``ScannerEmul`` from this widget config.

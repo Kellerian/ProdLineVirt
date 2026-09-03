@@ -10,6 +10,8 @@ from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from core.barcode_scanner.data import ScannerConfig, ScannerParams
+from core.main_ui.config_migration import generate_device_id
+from core.main_ui.device_card import DeviceCardMixin, DeviceZone
 from core.barcode_scanner.scanner_proxy import ScannerProxy
 from forms.Scanner import Ui_Form
 from libs.code_scheduler import CodeScheduler
@@ -32,20 +34,37 @@ _SEND_BATCH_SIZE = 1
 _SEND_INTERVAL_MS = 0
 
 
-class ScannerWidget(QWidget, Ui_Form):
+class ScannerWidget(QWidget, Ui_Form, DeviceCardMixin):
     """Виджет сканера: очередь кодов, COM-порт, ручная отправка и DnD."""
 
     delete_requested = Signal()
 
-    def __init__(self, name: str, port_name: str = "") -> None:
+    def __init__(
+        self,
+        name: str,
+        port_name: str = "",
+        device_id: str | None = None,
+    ) -> None:
         """Инициализирует виджет сканера.
 
         Args:
             name: Отображаемое имя устройства на линии.
             port_name: Имя COM-порта для предвыбора в combo (пусто — placeholder).
+            device_id: Stable identifier for layout persistence; generated when omitted.
         """
         super().__init__()
         self.setupUi(self)
+        self.device_id = device_id or generate_device_id()
+        self._device_header = self.mount_device_card_header(
+            device_id=self.device_id,
+            device_type="scanner",
+            zone=DeviceZone.CANVAS,
+            row_layout=self.horizontalLayout,
+            delete_button=self.tbDelete,
+        )
+        self.tbDelete = self._device_header.delete_button
+        self._device_header.delete_clicked.connect(self._on_delete_clicked)
+        self.wire_advanced_panel(self.tbAdvanced, self.wAdvanced)
         self._setup_icon(self.tbRun.isChecked())
         self._setup_send_icon()
         self._setup_refresh_ports_icon()
@@ -74,7 +93,6 @@ class ScannerWidget(QWidget, Ui_Form):
         self.tbRun.toggled.connect(self.run)
         self.tbRun.toggled.connect(self._setup_icon)
         self.tbRefreshPorts.clicked.connect(self._on_refresh_ports_clicked)
-        self.tbDelete.clicked.connect(self._on_delete_clicked)
         self.btnSend.clicked.connect(self._send_manual_input)
         self.leManualInput.returnPressed.connect(self._send_manual_input)
 
@@ -294,6 +312,7 @@ class ScannerWidget(QWidget, Ui_Form):
 
         if toggled:
             config = ScannerConfig(
+                device_id=self.device_id,
                 name=self.name,
                 port_name=port_name,
                 config=self._params,
@@ -331,7 +350,9 @@ class ScannerWidget(QWidget, Ui_Form):
             Имя, COM-порт и параметры линии.
         """
         return ScannerConfig(
+            device_id=self.device_id,
             name=self.name,
             port_name=self._get_port_name(),
             config=self._params,
+            advanced_expanded=self.is_advanced_expanded(),
         )

@@ -1,0 +1,26 @@
+---
+description: Структура документации DataMatrixControl по ClientTypes и точкам входа
+alwaysApply: true
+---
+
+# Документация
+
+- Составляемую документацию по проекту сохраняй в папке `docs` в корне проекта.
+- Структурируй документацию по подпапкам в соответствии с `client_info.client_type`,
+  который задаётся в основном исполняемом файле приложения.
+- Имя подпапки — имя члена перечисления `ClientTypes` в нижнем регистре
+  (например, `mainManager.py` задаёт `ClientTypes.MANAGER` → `docs/manager/`).
+
+## Ключевые точки входа
+
+| Файл | `ClientTypes` | Папка документации |
+|------|---------------|--------------------|
+| `dmcRestApi.py` | `API` | `docs/api/` |
+| `dmcServer.py` | `SERVER` | `docs/server/` |
+| `dmcServicePanel.py` | `SERVER` | `docs/server/` |
+| `mainManager.py` | `MANAGER` | `docs/manager/` |
+| `mainMonitor.py` | `MONITOR` | `docs/monitor/` |
+| `mainPrintStation.py` | `PRINT_STATION` | `docs/print_station/` |
+| `mainScaleStation.py` | `SCALESTATION` | `docs/scalestation/` |
+
+- Файл `apps/api/client/main.py` не является ключевой точкой входа и в документации не используется.
