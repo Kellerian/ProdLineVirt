@@ -1,0 +1,34 @@
+---
+description: Стандарты кода DataMatrixControl — типизация, тесты, комментарии
+alwaysApply: true
+---
+
+# Стандарты кода
+
+## Типизация и качество
+
+- При составлении кода всегда используй строгую типизацию: аннотации типов для аргументов, возвращаемых значений и атрибутов классов.
+- Для всех функций, методов и классов составляй docstrings (описание назначения, параметров и возвращаемого значения).
+- Пиши чистый, читаемый код с понятными именами переменных.
+- Старайся придерживаться принципов SOLID.
+
+## Логирование
+
+- В production-коде не используй `print()` — только `get_dmc_logger(DmcLoggers.*)` из `libs/log_data.py`.
+- Структурированные события — через `log_event()` / `bind_context()` из `libs/log_context.py`; константы `EVENT_*` в том же модуле.
+- Уровни: ERROR/CRITICAL с `exc_info=True` на исключениях; INFO — lifecycle и итоги (id + ключевые поля); DEBUG — протоколы и SQL; не логируй HTTP body / полные дампы объектов на INFO.
+- Длинные строки в DEBUG — `truncate_text()` из `libs/log_formatters.py` (до 2048 символов).
+- Настройка: `log_config.ini` (`format=text|json|both`), UI — `modules/LogConfigUi/log_config.py`.
+- **Исключения (legacy, не мигрировать без отдельной задачи):** `db_migration/setting_logs.py` (DEPRECATED); `apps/backend/db_provisioning/` — stdlib `logging.getLogger(__name__)` для CLI/provisioning; CLI-утилиты (`db_manager/cli.py`, `build_project.py`) — `print` допустим.
+- PyInstaller: в `build/spec/*.spec` указывай `libs.log_formatters`, `libs.log_context` в `hiddenimports`.
+
+Подробности — `docs/Server/logging_elk.md`.
+
+## Тестирование
+
+- Покрывай критически важные функции unit-тестами.
+
+## Комментарии и планирование
+
+- Не оставляй TODO-комментарии без указания контекста (причина, задача, ссылка на issue и т.п.).
+- Если предлагаешь решение, сначала напиши краткий план (пошагово), а только потом код.
