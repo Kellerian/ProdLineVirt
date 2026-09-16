@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication
 from core.barcode_scanner.scanner_widget import ScannerWidget
 from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.line_emul import MainLineField
+from core.printing.data import PrinterLanguage
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
 from core.transporting.transporter_widget import TransporterWidget
@@ -59,6 +60,30 @@ class TestDeviceClearData(unittest.TestCase):
         self.assertEqual(printer._data_list, [])
         self.assertEqual(printer.model_out.rowCount(), 0)
         printer._printer.clear_buffer.assert_called_once()
+
+    def test_printer_clear_data_clears_live_core_buffer(self) -> None:
+        """clear_data empties PrinterEmul._print_buffer, not only the UI."""
+        from core.printing.printer_core import PrinterEmul
+
+        with patch(
+            "core.printing.printer_core.get_server_socket",
+            return_value=MagicMock(),
+        ):
+            emul = PrinterEmul("PRN_1", 9100, 10, language=PrinterLanguage.tspl2)
+        emul._print_buffer.extend(["code1", "code2"])
+
+        printer = PrinterWidget(name="PRN_1", port=9100)
+        printer._printer._printer = emul
+        printer._data_list = ["code1", "code2"]
+        printer.model_out.appendRow(create_code_item("code1"))
+        printer.model_out.appendRow(create_code_item("code2"))
+
+        printer.clear_data()
+
+        self.assertEqual(printer._data_list, [])
+        self.assertEqual(printer.model_out.rowCount(), 0)
+        self.assertEqual(emul.buffer_size(), 0)
+        self.assertEqual(emul.buffer_data(), [])
 
     def test_camera_clear_data_clears_models_and_proxy_queues(self) -> None:
         """Camera clear_data resets models and core queues via proxy."""
@@ -222,7 +247,7 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
 
 
 class TestPrinterProxyClearBuffer(unittest.TestCase):
-    """PrinterProxy.clear_buffer delegates to PrinterEmul."""
+    """PrinterProxy buffer helpers delegate to PrinterEmul after dialect refactor."""
 
     def test_clear_buffer_when_printer_running(self) -> None:
         """clear_buffer clears the core deque when emulator is active."""
@@ -235,3 +260,72 @@ class TestPrinterProxyClearBuffer(unittest.TestCase):
         proxy.clear_buffer()
 
         proxy._printer.clear_buffer.assert_called_once()
+
+    def test_clear_buffer_noop_when_emulator_stopped(self) -> None:
+        """clear_buffer is safe when proxy has no running core."""
+        from core.printing.printer_proxy import PrinterProxy
+
+        proxy = PrinterProxy()
+        proxy.clear_buffer()
+
+    def test_clear_buffer_clears_core_for_all_languages(self) -> None:
+        """Language choice does not change line-buffer clearing in the core."""
+        from core.printing.printer_core import PrinterEmul
+        from core.printing.printer_proxy import PrinterProxy
+
+        for language in PrinterLanguage:
+            with self.subTest(language=language.value):
+                with patch(
+                    "core.printing.printer_core.get_server_socket",
+                    return_value=MagicMock(),
+                ):
+                    emul = PrinterEmul("PRN", 9100, 10, language=language)
+                emul._print_buffer.extend(["a", "b"])
+                proxy = PrinterProxy()
+                proxy._printer = emul
+
+                proxy.clear_buffer()
+
+                self.assertEqual(emul.buffer_size(), 0)
+                self.assertEqual(emul.buffer_data(), [])
+
+    def test_start_passes_language_kwarg_to_printer_emul(self) -> None:
+        """Proxy.start forwards language to PrinterEmul constructor."""
+        from core.printing.printer_core import PrinterEmul
+        from core.printing.printer_proxy import PrinterProxy
+
+        with patch(
+            "core.printing.printer_core.get_server_socket",
+            return_value=MagicMock(),
+        ):
+            with patch.object(PrinterEmul, "start", return_value=None):
+                proxy = PrinterProxy()
+                proxy.start("PRN_1", 9100, 5, PrinterLanguage.zpl)
+
+        self.assertIsNotNone(proxy._printer)
+        self.assertEqual(proxy._printer._language, PrinterLanguage.zpl)
+
+    def test_buffer_data_and_remove_delegate_to_core(self) -> None:
+        """check_data/remove use PrinterEmul buffer API on the live core."""
+        from core.printing.printer_core import PrinterEmul
+        from core.printing.printer_proxy import PrinterProxy
+
+        with patch(
+            "core.printing.printer_core.get_server_socket",
+            return_value=MagicMock(),
+        ):
+            emul = PrinterEmul("PRN", 9100, 10, language=PrinterLanguage.legacy)
+        emul._print_buffer.extend(["keep", "drop"])
+
+        proxy = PrinterProxy()
+        proxy._printer = emul
+        snapshots: list[list[str]] = []
+        proxy.buffer_data.connect(snapshots.append)
+
+        proxy.check_data()
+        proxy.remove("drop")
+        proxy.check_data()
+
+        self.assertEqual(snapshots[0], ["keep", "drop"])
+        self.assertEqual(emul.buffer_data(), ["keep"])
+        self.assertEqual(snapshots[-1], ["keep"])

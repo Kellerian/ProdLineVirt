@@ -9,7 +9,7 @@ from core.generator.data import GeneratorConfig
 from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.data import ConfigFile
 from core.main_ui.flow_layout import FlowLayout
-from core.printing.data import PrinterConfig
+from core.printing.data import PrinterConfig, PrinterLanguage
 from core.printing.printer_widget import PrinterWidget
 from core.scanning.camera_widget import CameraWidget
 from core.scanning.data import CameraConfig
@@ -239,9 +239,13 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.add_printer(name, port)
 
     def add_printer(
-        self, name: str, port: int, buffer: int = 1
+        self,
+        name: str,
+        port: int,
+        buffer: int = 1,
+        language: PrinterLanguage = PrinterLanguage.legacy,
     ) -> PrinterWidget:
-        prn_w = PrinterWidget(name, port, buffer)
+        prn_w = PrinterWidget(name, port, buffer, language)
         self._add_device(prn_w)
         return prn_w
 
@@ -334,7 +338,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self, printers: list[PrinterConfig], devices: dict[str, int]
     ):
         for prn in printers:
-            prn_w = self.add_printer(prn.name, prn.port, prn.buffer)
+            prn_w = self.add_printer(
+                prn.name, prn.port, prn.buffer, prn.language
+            )
             devices[prn_w.name] = id(prn_w)
 
     def _load_cameras(

@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Camera.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.1
+## Created by: Qt User Interface Compiler version 6.11.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -327,7 +327,7 @@ class Ui_Form(object):
         self.spSize.setReadOnly(False)
         self.spSize.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spSize.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spSize.setProperty("showGroupSeparator", True)
+        self.spSize.setProperty(u"showGroupSeparator", True)
         self.spSize.setMinimum(1)
         self.spSize.setMaximum(9999)
         self.spSize.setValue(1)
@@ -360,7 +360,7 @@ class Ui_Form(object):
         self.spInterval.setReadOnly(False)
         self.spInterval.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spInterval.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spInterval.setProperty("showGroupSeparator", True)
+        self.spInterval.setProperty(u"showGroupSeparator", True)
         self.spInterval.setMinimum(10)
         self.spInterval.setMaximum(999999)
         self.spInterval.setValue(250)
@@ -433,7 +433,7 @@ class Ui_Form(object):
         self.spNoReadPercent.setReadOnly(False)
         self.spNoReadPercent.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spNoReadPercent.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spNoReadPercent.setProperty("showGroupSeparator", True)
+        self.spNoReadPercent.setProperty(u"showGroupSeparator", True)
         self.spNoReadPercent.setMinimum(0)
         self.spNoReadPercent.setMaximum(100)
         self.spNoReadPercent.setValue(0)
@@ -469,7 +469,7 @@ class Ui_Form(object):
         self.spDupsPercent.setReadOnly(False)
         self.spDupsPercent.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spDupsPercent.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spDupsPercent.setProperty("showGroupSeparator", True)
+        self.spDupsPercent.setProperty(u"showGroupSeparator", True)
         self.spDupsPercent.setMinimum(0)
         self.spDupsPercent.setMaximum(100)
         self.spDupsPercent.setValue(0)
@@ -505,7 +505,7 @@ class Ui_Form(object):
         self.spGradeErrorPercent.setReadOnly(False)
         self.spGradeErrorPercent.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spGradeErrorPercent.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spGradeErrorPercent.setProperty("showGroupSeparator", True)
+        self.spGradeErrorPercent.setProperty(u"showGroupSeparator", True)
         self.spGradeErrorPercent.setMinimum(0)
         self.spGradeErrorPercent.setMaximum(100)
         self.spGradeErrorPercent.setValue(0)

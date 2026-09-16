@@ -335,7 +335,7 @@ QWidget#Form {
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,1">
      <property name="spacing">
       <number>0</number>
      </property>
@@ -398,6 +398,52 @@ QWidget#Form {
        <property name="value">
         <number>1</number>
        </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="cbLanguage">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <family>DejaVu Sans Mono</family>
+         <pointsize>10</pointsize>
+         <italic>false</italic>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string>Язык эмуляции принтера</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Legacy</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>TSPL2</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>EZPL</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>ZPL</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>SAVEMA</string>
+        </property>
+       </item>
       </widget>
      </item>
     </layout>

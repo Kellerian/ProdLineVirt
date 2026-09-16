@@ -4,7 +4,7 @@ from PySide6.QtCore import QModelIndex, Qt, Signal
 from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import QLabel, QListView, QMessageBox, QWidget
 
-from core.printing.data import PrinterConfig
+from core.printing.data import PrinterConfig, PrinterLanguage
 from core.printing.printer_proxy import PrinterProxy
 from forms.Printer import Ui_Form
 from libs.datamatrix import get_gs1dm_pixmap
@@ -12,12 +12,27 @@ from libs.loggers import UI_LOGGER
 from libs.model_processing import update_model_data
 
 
+_LANGUAGE_BY_COMBO_INDEX: tuple[PrinterLanguage, ...] = (
+    PrinterLanguage.legacy,
+    PrinterLanguage.tspl2,
+    PrinterLanguage.ezpl,
+    PrinterLanguage.zpl,
+    PrinterLanguage.sppl,
+)
+
+
 class PrinterWidget(QWidget, Ui_Form):
     """Виджет эмулятора принтера на холсте Line Emulator."""
 
     delete_requested = Signal()
 
-    def __init__(self, name: str, port: int, buffer: int = 1):
+    def __init__(
+        self,
+        name: str,
+        port: int,
+        buffer: int = 1,
+        language: PrinterLanguage = PrinterLanguage.legacy,
+    ):
         super().__init__()
         self.setupUi(self)
         self.name = name
@@ -32,7 +47,23 @@ class PrinterWidget(QWidget, Ui_Form):
         self.leName.setText(name)
         self.leConnetionStr.setText(str(port))
         self.spAmount.setValue(buffer)
+        self._set_language_combo(language)
         self._lbl: QLabel | None = None
+
+    def _selected_language(self) -> PrinterLanguage:
+        """Возвращает язык эмуляции, выбранный в combo."""
+        idx = self.cbLanguage.currentIndex()
+        if 0 <= idx < len(_LANGUAGE_BY_COMBO_INDEX):
+            return _LANGUAGE_BY_COMBO_INDEX[idx]
+        return PrinterLanguage.legacy
+
+    def _set_language_combo(self, language: PrinterLanguage) -> None:
+        """Устанавливает пункт combo по значению ``PrinterLanguage``."""
+        try:
+            idx = _LANGUAGE_BY_COMBO_INDEX.index(language)
+        except ValueError:
+            idx = 0
+        self.cbLanguage.setCurrentIndex(idx)
 
     def _connect_ui(self):
         self.tbRun.toggled.connect(self.run)
@@ -117,17 +148,21 @@ class PrinterWidget(QWidget, Ui_Form):
         if not self.leName.text() and not self.leConnetionStr.text():
             self.tbRun.setChecked(False)
             return
-        self.leName.setDisabled(toggled)
-        self.leConnetionStr.setDisabled(toggled)
-        self.name = self.leName.text()
         if toggled:
-            name = self.leName.text()
-            buffer_size = self.spAmount.value()
             try:
                 port = int(self.leConnetionStr.text())
             except ValueError:
+                self.tbRun.setChecked(False)
                 return
-            self._printer.start(name, port, buffer_size)
+            name = self.leName.text()
+            buffer_size = self.spAmount.value()
+            language = self._selected_language()
+        self.leName.setDisabled(toggled)
+        self.leConnetionStr.setDisabled(toggled)
+        self.cbLanguage.setDisabled(toggled)
+        self.name = self.leName.text()
+        if toggled:
+            self._printer.start(name, port, buffer_size, language)
             self._printer.set_buffer_size(self.spAmount.value())
         else:
             self._printer.stop()
@@ -137,7 +172,8 @@ class PrinterWidget(QWidget, Ui_Form):
         return PrinterConfig(
             name=self.name,
             port=int(self.leConnetionStr.text()),
-            buffer=self.spAmount.value()
+            buffer=self.spAmount.value(),
+            language=self._selected_language(),
         )
 
     def create_image(self, idx: QModelIndex):

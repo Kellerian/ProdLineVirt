@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Transporter.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.1
+## Created by: Qt User Interface Compiler version 6.11.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -218,7 +218,7 @@ class Ui_Form(object):
         self.spInterval.setReadOnly(False)
         self.spInterval.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spInterval.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spInterval.setProperty("showGroupSeparator", True)
+        self.spInterval.setProperty(u"showGroupSeparator", True)
         self.spInterval.setMinimum(10)
         self.spInterval.setMaximum(999999)
         self.spInterval.setValue(250)

@@ -1,5 +1,8 @@
-from PySide6.QtCore import Signal, QObject, QTimer
+import inspect
 
+from PySide6.QtCore import QObject, QTimer, Signal
+
+from core.printing.data import PrinterLanguage
 from core.printing.printer_core import PrinterEmul
 
 
@@ -21,8 +24,19 @@ class PrinterProxy(QObject):
         timer.timeout.connect(self.check_data)
         return timer
 
-    def start(self, name: str, port: int, buffer: int):
-        self._printer = PrinterEmul(name, port, buffer)
+    def start(
+        self,
+        name: str,
+        port: int,
+        buffer: int,
+        language: PrinterLanguage = PrinterLanguage.legacy,
+    ) -> None:
+        """Запускает TCP-эмулятор принтера с выбранным языком протокола."""
+        emul_params = inspect.signature(PrinterEmul.__init__).parameters
+        if "language" in emul_params:
+            self._printer = PrinterEmul(name, port, buffer, language=language)
+        else:
+            self._printer = PrinterEmul(name, port, buffer)
         self._printer.start()
         self._data_update_timer.start()
 

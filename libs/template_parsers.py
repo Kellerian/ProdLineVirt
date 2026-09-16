@@ -1,74 +1,23 @@
-import re
+"""Обратносовместимые обёртки извлечения кодов из шаблонов печати."""
+
+if __name__ == "__main__" and __package__ is None:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from core.printing.extract import (
+    extract_barcode_value_from_template,
+    process_barcode,
+)
+
+__all__ = [
+    "extract_barcode_value_from_template",
+    "process_barcode",
+]
 
 
-def extract_barcode_regex(text):
-    """
-    Извлекает значение barcode с помощью регулярного выражения
-    Учитывает случаи когда barcode в середине (~gt~...~gt~) и в конце (~gt~...})
-    """
-    try:
-        # Ищем паттерн: ~gt~barcode~gt~(любые символы до ~gt~ или })
-        pattern = r"~gt~barcode~gt~([^~}]+)(?=~gt~|})"
-        match = re.search(pattern, text)
-
-        if match:
-            return match.group(1)
-        else:
-            return None
-
-    except Exception as e:
-        print(f"Ошибка при извлечении barcode: {e}")
-        return None
-
-
-def extract_barcode_value_from_template(msg_received: str) -> list[str]:
-    msg_rows = msg_received.split("\n")
-    extracted_data: list[str] = []
-    for r, t_row in enumerate(msg_rows, start=0):
-        row = t_row.strip()
-        dm_extracted = ''
-        if row.startswith("~SPLAMQ"):
-            dm_extracted = extract_barcode_regex(row)
-        if row.startswith("~SPLCDF"):
-            print(row)
-        if row.startswith('BARCODE='):
-            row = row.replace('BARCODE=', '')
-            row = row.replace('~d034', '"')
-            dm_extracted = row.strip()
-        elif row.startswith('DMATRIX') or row.startswith("BARCODE "):
-            params = row.split('"')
-            if 'DMATRIX' in row:
-                splitted = params[1]
-            else:
-                splitted = params[-2]
-            dm_extracted = splitted.replace('~d034', '"').strip()
-        elif row.startswith('XRB'):
-            r_n = msg_rows[r + 1]
-            dm_extracted = r_n.strip()
-        elif row.startswith('BR,'):
-            row = row.replace('BR,24,24,2,5,250,0,1,', '')
-            dm_extracted = row.strip()
-        elif '^FH^FD_7e' in row:
-            row = row.replace('^FH^FD_7e', '')
-            row = row.replace('^FS', '')
-            dm_extracted = row.strip()
-        if dm_extracted and len(dm_extracted) >= 13:
-            extracted_data.append(dm_extracted)
-    return extracted_data
-
-
-def process_barcode(barcode: str) -> str:
-    if barcode.startswith("~1"):
-        barcode = barcode[2:]
-    # if '07808631857726' in barcode:
-    #     weight = randint(100, 1000)
-    #     barcode = (
-    #         f"{barcode}{chr(29)}3103{weight:06}"
-    #     )
-    return barcode
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     template = """
     
     

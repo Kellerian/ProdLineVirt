@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Printer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.1
+## Created by: Qt User Interface Compiler version 6.11.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -15,9 +15,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QHBoxLayout,
-    QLabel, QLineEdit, QListView, QSizePolicy,
-    QSpinBox, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QComboBox,
+    QHBoxLayout, QLabel, QLineEdit, QListView,
+    QSizePolicy, QSpinBox, QToolButton, QVBoxLayout,
+    QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -282,14 +283,28 @@ class Ui_Form(object):
         self.spAmount.setReadOnly(False)
         self.spAmount.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
         self.spAmount.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
-        self.spAmount.setProperty("showGroupSeparator", True)
+        self.spAmount.setProperty(u"showGroupSeparator", True)
         self.spAmount.setMinimum(1)
         self.spAmount.setMaximum(100)
         self.spAmount.setValue(1)
 
         self.horizontalLayout_2.addWidget(self.spAmount)
 
-        self.horizontalLayout_2.setStretch(0, 1)
+        self.cbLanguage = QComboBox(Form)
+        self.cbLanguage.addItem("")
+        self.cbLanguage.addItem("")
+        self.cbLanguage.addItem("")
+        self.cbLanguage.addItem("")
+        self.cbLanguage.addItem("")
+        self.cbLanguage.setObjectName(u"cbLanguage")
+        sizePolicy2.setHeightForWidth(self.cbLanguage.sizePolicy().hasHeightForWidth())
+        self.cbLanguage.setSizePolicy(sizePolicy2)
+        self.cbLanguage.setFont(font2)
+
+        self.horizontalLayout_2.addWidget(self.cbLanguage)
+
+        self.horizontalLayout_2.setStretch(1, 1)
+        self.horizontalLayout_2.setStretch(2, 1)
 
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
@@ -327,5 +342,14 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.tbDelete.setText(QCoreApplication.translate("Form", u"X", None))
         self.label.setText(QCoreApplication.translate("Form", u"\u0411\u0443\u0444\u0435\u0440:", None))
+        self.cbLanguage.setItemText(0, QCoreApplication.translate("Form", u"Legacy", None))
+        self.cbLanguage.setItemText(1, QCoreApplication.translate("Form", u"TSPL2", None))
+        self.cbLanguage.setItemText(2, QCoreApplication.translate("Form", u"EZPL", None))
+        self.cbLanguage.setItemText(3, QCoreApplication.translate("Form", u"ZPL", None))
+        self.cbLanguage.setItemText(4, QCoreApplication.translate("Form", u"SAVEMA", None))
+
+#if QT_CONFIG(tooltip)
+        self.cbLanguage.setToolTip(QCoreApplication.translate("Form", u"\u042f\u0437\u044b\u043a \u044d\u043c\u0443\u043b\u044f\u0446\u0438\u0438 \u043f\u0440\u0438\u043d\u0442\u0435\u0440\u0430", None))
+#endif // QT_CONFIG(tooltip)
     # retranslateUi
 
