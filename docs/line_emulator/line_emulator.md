@@ -3,11 +3,12 @@
 | Параметр | Значение |
 |----------|----------|
 | Точка входа | `main.py` |
-| Версия | `client_info.VERSION` (например `1.0.0.1.b0005`) |
+| Версия | `client_info.VERSION` (например `1.0.0.1.b0007`) |
 | Главное окно | `core/main_ui/line_emul.py` → `MainLineField` |
 | UI-форма | `forms/Main.py` → `Ui_MainWindow` |
 | Конфигурация | JSON через `core/main_ui/data.py` → `ConfigFile` |
-| Сборка exe | `build_project.py` → `build/spec/main.spec` → `build/install/dmcLineEmulator/` |
+| Сборка onedir | `build_project.py` (Windows без флагов; Linux freeze-only: `--linux`) → `build/spec/main.spec` → `build/install/dmcLineEmulator/` |
+| Сборка `.deb` | Только Linux: см. [debian_packaging.md](debian_packaging.md); команды `build_project.py --deb` / `build_deb.py` → `build/deb/dmclineemulator_<debian_ver>_amd64.deb` |
 
 ## Назначение
 
@@ -315,29 +316,83 @@ flowchart LR
 
 Логирование инициализируется в `setup_logging()`; рабочие каталоги — `client_info.WORKDIR`, `client_info.RUNDIR`.
 
-## Сборка exe (PyInstaller)
+## Сборка onedir (PyInstaller)
+
+Один spec `build/spec/main.spec` используется и на Windows, и на Linux. Пути к `main.py`, `media/logo.ico` и шрифтам QtAwesome считаются через `pathlib.Path` от каталога spec (`SPECPATH`, при отсутствии имени — `__file__`), без строк с `..\..\` и обратными слэшами. Отдельного `main_linux.spec` нет. ELF-артефакт на Windows-хосте не собирается (PyInstaller не кросс-компилирует).
+
+Точка входа freeze — `build_project.py` (интерпретатор только из `venv`). Общий helper-поток: `generate_ui_files()` → PyInstaller (`build_modules` / `build_app`) с `--workpath` = `build/tmp` (`TMP_DIR`) и `--distpath` = `build/install` (`INSTALL_DIR`); COLLECT пишет `build/install/dmcLineEmulator/`. Перед freeze скрипт чистит устаревший каталог `build/install/dmcServer`, после — `TMP_DIR`.
+
+| Хост / флаги | Поведение |
+|--------------|-----------|
+| Windows, без флагов | Исторический onedir: exe в `build/install/dmcLineEmulator/` |
+| Linux: `build_project.py --linux` | Freeze-only: UI + PyInstaller → ELF onedir в `build/install/dmcLineEmulator/`; `.deb` не собирается |
+| Linux: `build_project.py --deb` или `build_deb.py` | Всегда заново freeze (тот же путь, что `--linux`), затем staging и `dpkg-deb --build --root-owner-group` |
+| Windows: `--linux` / `--deb` или `build_deb.py` | Сообщение в stderr, код выхода `1`; UI, PyInstaller и `dpkg-deb` не запускаются |
 
 Подзадача **#9** плана эмулятора сканера: зависимости сканера (`pyserial`, `QtAwesome`) должны попадать в собранный дистрибутив.
 
-### Команда сборки
+### Команда сборки (Windows)
 
 ```powershell
 .\venv\Scripts\python.exe build_project.py
 ```
 
-Скрипт пересобирает UI из `forms/ui/*.ui`, затем вызывает PyInstaller по `build/spec/main.spec`. Итоговый каталог:
+Скрипт пересобирает UI из каталогов `ui/` (`**/*.ui` → соседний `.py` через `pyside6-uic`), затем вызывает PyInstaller по `build/spec/main.spec`. Итоговый бинарь:
 
 `build/install/dmcLineEmulator/dmcLineEmulator.exe`
+
+### Команда сборки (Linux / WSL2)
+
+Только на Linux (native или WSL2), Python из `venv`. На Windows `--linux` / `--deb` / `build_deb.py` завершаются с кодом `1` до freeze.
+
+Freeze-only (onedir, без `.deb`):
+
+```bash
+venv/bin/python build_project.py --linux
+```
+
+Итоговый бинарь — `build/install/dmcLineEmulator/dmcLineEmulator` (ELF).
+
+Пакет `.deb` (всегда пересобирает onedir → smoke `ldd` → `dpkg-deb`):
+
+```bash
+venv/bin/python build_project.py --deb
+# или: venv/bin/python build_deb.py
+```
+
+Артефакт: `build/deb/dmclineemulator_<debian_ver>_amd64.deb` (`client_info.VERSION` `1.0.0.1.b0007` → `1.0.0.1~b0007-1`). Пакет `dmclineemulator`, файлы в `/opt/dmclineemulator/`.
+
+Пошаговые предусловия (WSL/Debian, venv, apt-пакеты), установка `dpkg -i`, удаление, Depends/Recommends и риски `pip` на Linux — в [debian_packaging.md](debian_packaging.md).
+
+Автотесты staging, флагов и smoke (без реального `dpkg-deb` / ELF): `tests/test_core/test_build_deb.py`.
+
+### Декодирование stdout внешних команд
+
+`run_external` (в т.ч. вывод `pyside6-uic`) декодирует байты через `decode_subprocess_output`:
+
+- Linux: `utf-8`, затем `cp866`, затем `cp1251`;
+- Windows: `cp866`, затем `cp1251`, затем `utf-8`.
+
+Если ни одна кодировка не подошла — UTF-8 с `errors="replace"`.
+
+Автотесты CLI и декодирования: `tests/test_core/test_build_project.py`.
 
 ### Spec-файл `build/spec/main.spec`
 
 | Элемент | Назначение |
 |---------|------------|
-| Точка входа | `main.py` |
-| Имя exe | `dmcLineEmulator` |
-| `hiddenimports` | `serial`, `serial.tools.list_ports` — перечисление и открытие COM (`libs/serial_port`); `qtawesome`, `qtawesome.iconic_font` — иконки `btnSend` и `tbRefreshPorts` в `ScannerWidget` |
-| `datas` | Каталог шрифтов QtAwesome (`qtawesome/fonts`) — без него иконки в frozen-сборке не отображаются |
-| Прочие `hiddenimports` | `pylibdmtx`, `psycopg`, `shortuuid` — уже использовались эмулятором до сканера |
+| Точка входа | `_REPO_ROOT / main.py` (`_REPO_ROOT` = родитель родителя каталога spec) |
+| Имя EXE / COLLECT | `dmcLineEmulator` |
+| `console` | `False` (windowed GUI) |
+| Иконка | `_REPO_ROOT / media / logo.ico` (и в `datas` как `media`) |
+| `hiddenimports` | `serial`, `serial.tools.list_ports` — COM (`libs/serial_port`); `qtawesome`, `qtawesome.iconic_font` — иконки `btnSend` и `tbRefreshPorts` в `ScannerWidget`; также `pylibdmtx`, `psycopg`, `psycopg_c`, `shortuuid` |
+| `datas` | Шрифты QtAwesome (`qtawesome/fonts`) — без них иконки в frozen-сборке не отображаются |
+| Native libdmtx | TOC BINARY из `pylibdmtx.EXTERNAL_DEPENDENCIES` (см. ниже) |
+
+**libdmtx в bundle:**
+
+- **Windows** — каждый `CDLL` из `EXTERNAL_DEPENDENCIES` добавляется как BINARY по `CDLL._name` как есть. Если DLL нет, freeze падает (как и раньше).
+- **Linux** — BINARY добавляется только если файл найден: путь из `_name`, иначе `ctypes.util.find_library('dmtx')` и разбор `ldconfig -p`. Если библиотека не установлена на машине freeze, в bundle ничего не кладётся; spec печатает `WARNING: pylibdmtx native library was not collected into the bundle` (или WARNING при падении `import pylibdmtx`). Runtime тогда зависит от системного пакета (`libdmtx0` / `libdmtx0a` — имя по дистрибутиву; в `.deb` это будет `Depends`, не этот spec).
 
 Зависимости в `requirements.txt`:
 
@@ -350,7 +405,7 @@ PyInstaller не всегда подхватывает подмодули `seria
 
 ### Версия приложения
 
-Номер сборки — `client_info.VERSION` в корне репозитория. Текущая версия: `1.0.0.1.b0005` (удаление виджетов + COM refresh); ранее `1.0.0.1.b0004` (Remove API), `1.0.0.1.b0003` (`tbDelete` / `delete_requested`), `1.0.0.1.b0002` (fix-qt-light-theme), `1.0.0.1.b0001` (релиз с эмулятором сканера ШК). Последний разряд увеличивается по соглашениям версионирования проекта.
+Номер сборки — `client_info.VERSION` в корне репозитория. Текущая версия: `1.0.0.1.b0007` (сборка `.deb` для Debian/Ubuntu); ранее `1.0.0.1.b0006` (восстановление cross-widget DnD), `1.0.0.1.b0005` (удаление виджетов + COM refresh), `1.0.0.1.b0004` (Remove API), `1.0.0.1.b0003` (`tbDelete` / `delete_requested`), `1.0.0.1.b0002` (fix-qt-light-theme), `1.0.0.1.b0001` (релиз с эмулятором сканера ШК). Последний разряд увеличивается по соглашениям версионирования проекта.
 
 ## Связанная документация
 
@@ -367,6 +422,7 @@ PyInstaller не всегда подхватывает подмодули `seria
 - [scanner_unit_tests.md](scanner_unit_tests.md) — unit-тесты подсистемы сканера: mock COM, `ScannerEmul` без Qt, `ConfigFile.scanners`, wiring в transport/generator; COM refresh — `test_scanner_com_refresh.py`; Remove API — см. [frontend/widget-delete.md](frontend/widget-delete.md).
 - [com0com_setup.md](com0com_setup.md) — настройка виртуальных COM-портов com0com для тестирования сканера (подзадача #9).
 - [bulk-control.md](bulk-control.md) — меню «Управление», массовый start/stop/clear, `clear_data()` API, порядок pipeline (подзадача #10 плана serial barcode scanner).
-- Раздел «Сборка exe (PyInstaller)» выше — `main.spec`, hiddenimports `pyserial`/`qtawesome`, `scanner_example.json`, `VERSION` (подзадача #9).
+- Раздел «Сборка onedir (PyInstaller)» выше — кроссплатформенный `main.spec`; `--linux` / `--deb` / Windows; hiddenimports и BINARY libdmtx.
+- [debian_packaging.md](debian_packaging.md) — сборка и установка `.deb` на WSL2/Debian (предусловия, venv, `dpkg -i` / удаление, версия из `client_info.VERSION`).
 - [user-guides/scanner-widget.md](user-guides/scanner-widget.md) — пользовательские шаги: выбор COM, обновление списка портов (`tbRefreshPorts`), Run/Stop, удаление (`tbDelete`).
 - [user-guides/widget-delete.md](user-guides/widget-delete.md) — удаление любого виджета кнопкой «X» с холста.

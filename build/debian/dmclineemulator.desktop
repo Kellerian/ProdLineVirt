@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=dmcLineEmulator
+Comment=Production line emulator
+Exec=/opt/dmclineemulator/dmcLineEmulator
+Icon=dmclineemulator
+Categories=Utility;
+Terminal=false

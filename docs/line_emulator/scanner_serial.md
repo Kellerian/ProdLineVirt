@@ -172,6 +172,6 @@ sequenceDiagram
 ## См. также
 
 - [scanner_unit_tests.md](scanner_unit_tests.md) — unit-тесты serial lib, `ScannerEmul`, config, transport/generator wiring (подзадача #8)
-- [line_emulator.md](line_emulator.md) — карта приложения эмулятора линии; раздел «Сборка exe» — `main.spec`, hiddenimports `pyserial` (#9)
+- [line_emulator.md](line_emulator.md) — карта приложения эмулятора линии; раздел «Сборка onedir (PyInstaller)» — кроссплатформенный `main.spec`, hiddenimports `pyserial` (#9)
 - [com0com_setup.md](com0com_setup.md) — виртуальные COM-порты для отладки сканера (Windows)
 - [code_scheduler.md](code_scheduler.md) — таймеры 10 мс / 250 мс в контексте линии

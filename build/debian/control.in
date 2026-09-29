@@ -1,0 +1,28 @@
+Package: dmclineemulator
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: DataMatrixControl <dmclineemulator@localhost>
+# Runtime Depends for a PySide6/Qt6 xcb GUI onedir on Debian 12 (bookworm)
+# and Ubuntu 22.04+ (amd64). Host packages only: libQt6*.so is normally
+# inside the PyInstaller onedir and is not listed here.
+# pyserial needs /dev/tty* access, not an apt Depends.
+# t64 alternatives: Ubuntu 24.04 renamed some soname packages; Debian 12
+# and Ubuntu 22.04 still use the pre-t64 names. Prefer the old name first.
+# libdmtx* covers pylibdmtx when libdmtx is not in the bundle; libpq5
+# covers psycopg when libpq is not bundled.
+# fonts-dejavu-core is Recommends (glyph coverage), not a hard Depends.
+# Smoke on Linux after freeze, before dpkg-deb:
+#   ldd build/install/dmcLineEmulator/dmcLineEmulator
+# must have no "not found" lines (see smoke_check_linux_onedir in
+# build_deb.py). Optional ELF start uses xvfb-run or DISPLAY.
+# Actual ldd was not run on the Windows development host; this list is
+# the known Qt6 xcb / glib / GL / dbus / fontconfig host set, not an
+# ldd dump from this machine.
+Depends: libc6, libglib2.0-0 | libglib2.0-0t64, libgl1, libegl1, libfontconfig1, libdbus-1-3, libx11-6, libxcb1, libxkbcommon0, libxkbcommon-x11-0, libxcb-cursor0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-randr0, libxcb-render0, libxcb-render-util0, libxcb-shape0, libxcb-shm0, libxcb-sync1, libxcb-xfixes0, libxcb-xinerama0, libxcb-xkb1, libdmtx0t64 | libdmtx0a | libdmtx0, libpq5
+Recommends: fonts-dejavu-core
+Description: Production line emulator (dmcLineEmulator)
+ Desktop PySide6 application that emulates a DataMatrix marking line
+ (cameras, scanners, conveyors, printers). Installs a PyInstaller onedir
+ under /opt/dmclineemulator.
