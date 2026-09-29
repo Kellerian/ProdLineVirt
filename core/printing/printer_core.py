@@ -144,7 +144,7 @@ class PrinterEmul:
         if self._language == PrinterLanguage.tspl2:
             return Tspl2Dialect(state)
         if self._language == PrinterLanguage.ezpl:
-            return EzplDialect(state)
+            return EzplDialect(state, line_queue_size=line_size)
         if self._language == PrinterLanguage.zpl:
             return ZplDialect(state)
         if self._language == PrinterLanguage.sppl:

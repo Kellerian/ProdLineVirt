@@ -22,7 +22,9 @@ class TestEzplLabelQueryLineEndings(unittest.TestCase):
     """~S,LABEL принимает опциональные CR/LF."""
 
     def setUp(self) -> None:
-        self.dialect = EzplDialect(PrinterDeviceState(remaining=7))
+        self.dialect = EzplDialect(
+            PrinterDeviceState(), line_queue_size=lambda: 7
+        )
 
     def _label_response(self, query: bytes) -> tuple[int, bytes]:
         buf = bytearray(query)
@@ -60,7 +62,9 @@ class TestEzplStatusQueryLineEndings(unittest.TestCase):
     """~S,STATUS с теми же правилами окончания строки."""
 
     def setUp(self) -> None:
-        self.dialect = EzplDialect(PrinterDeviceState(remaining=3))
+        self.dialect = EzplDialect(
+            PrinterDeviceState(), line_queue_size=lambda: 3
+        )
 
     def test_lf_only(self) -> None:
         buf = bytearray(b"~S,STATUS\n")

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from core.printing.dialects.base import (
     PrinterBusyPhase,
     PrinterDeviceState,
@@ -16,15 +18,17 @@ _QUERY_HI = b"~HI"
 _QUERY_STATUS = b"~S,STATUS"
 _QUERY_LABEL = b"~S,LABEL"
 
+LineQueueSizeCallback = Callable[[], int]
 
-def format_ezpl_label_remaining(remaining: int) -> str:
+
+def format_ezpl_label_remaining(queue_count: int) -> str:
     """
     Формат ответа ``~S,LABEL`` — 3–5 цифр с ведущими нулями (PSM: ``015``).
 
-    :param remaining: Число этикеток в очереди печати принтера.
+    :param queue_count: Число этикеток в очереди буфера виджета принтера.
     :returns: Строка длиной от 3 до 5 символов.
     """
-    count = max(0, remaining)
+    count = max(0, queue_count)
     if count == 0:
         return "000"
     width = max(3, len(str(count)))
@@ -32,12 +36,12 @@ def format_ezpl_label_remaining(remaining: int) -> str:
     return f"{count:0{width}d}"
 
 
-def format_ezpl_status_line(state: PrinterDeviceState) -> str:
+def format_ezpl_status_line(state: PrinterDeviceState, queue_count: int) -> str:
     """
     Формат ответа ``~S,STATUS`` — ``aa,nnnnn`` (PSM §8.6).
 
     ``aa``: ``00`` idle, ``50`` printing, ``60`` processing.
-    ``nnnnn`` — ``remaining`` (согласовано с ``~S,LABEL``).
+    ``nnnnn`` — очередь буфера виджета (согласовано с ``~S,LABEL``).
     """
     phase = state.busy_phase
     if phase == PrinterBusyPhase.printing:
@@ -46,11 +50,31 @@ def format_ezpl_status_line(state: PrinterDeviceState) -> str:
         status_code = "60"
     else:
         status_code = "00"
-    return f"{status_code},{state.remaining:05d}\r\n"
+    count = max(0, queue_count)
+    return f"{status_code},{count:05d}\r\n"
 
 
 class EzplDialect(PrinterDialect):
     """Эмуляция запросов GoDEX EZPL и приёма растровых заданий Q…E."""
+
+    def __init__(
+        self,
+        state: PrinterDeviceState,
+        *,
+        line_queue_size: LineQueueSizeCallback | None = None,
+    ) -> None:
+        """
+        :param state: Общее состояние (busy, ошибки).
+        :param line_queue_size: Размер очереди буфера виджета для ``STATUS`` / ``LABEL``.
+        """
+        super().__init__(state)
+        self._line_queue_size = line_queue_size
+
+    def _queue_count(self) -> int:
+        """Число этикеток в очереди буфера виджета."""
+        if self._line_queue_size is not None:
+            return self._line_queue_size()
+        return 0
 
     def try_handle_query(self, buf: bytearray) -> tuple[int, bytes | None]:
         """
@@ -73,14 +97,16 @@ class EzplDialect(PrinterDialect):
         if consumed is None:
             return 0, None
         if consumed > 0:
-            response = format_ezpl_status_line(self._state).encode("ascii")
+            response = format_ezpl_status_line(
+                self._state, self._queue_count()
+            ).encode("ascii")
             return consumed, response
 
         consumed = try_take_exact_command(data, _QUERY_LABEL)
         if consumed is None:
             return 0, None
         if consumed > 0:
-            label_text = format_ezpl_label_remaining(self._state.remaining)
+            label_text = format_ezpl_label_remaining(self._queue_count())
             return consumed, label_text.encode("ascii")
 
         return 0, None
@@ -89,8 +115,8 @@ class EzplDialect(PrinterDialect):
         """
         Разобрать полное EZPL-задание (конверт + Q + растр + ``\\r\\nE\\r\\n``).
 
-        После разбора: ``on_codes``, ``remaining++``, ``busy_phase=processing``.
-        Дальше #10 вызывает ``advance_busy_to_printing`` / ``complete_print_job``.
+        После разбора: ``on_codes`` (буфер виджета), ``busy_phase=processing``.
+        Дальше ядро вызывает ``advance_busy_to_printing`` / ``complete_print_job``.
 
         :param buf: Накопленные байты соединения.
         :returns: ``(consumed, codes)``; ``(0, [])`` если кадр неполный.
@@ -100,7 +126,6 @@ class EzplDialect(PrinterDialect):
             return 0, []
 
         codes = extract_codes_from_job(frame)
-        self._state.remaining += 1
         self._state.busy_phase = PrinterBusyPhase.processing
         self._state.emit_codes(codes)
         return consumed, codes
@@ -112,10 +137,9 @@ class EzplDialect(PrinterDialect):
 
     def complete_print_job(self) -> None:
         """
-        Завершить симуляцию печати: ``remaining--``, idle (STATUS ``00``).
+        Завершить симуляцию печати: idle (STATUS ``00``).
 
-        Вызывается из ``PrinterEmul`` после задержки (#10).
+        Вызывается из ``PrinterEmul`` после задержки; очередь в ответах
+        берётся из буфера виджета, не из ``PrinterDeviceState.remaining``.
         """
-        if self._state.remaining > 0:
-            self._state.remaining -= 1
         self._state.busy_phase = PrinterBusyPhase.idle

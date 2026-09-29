@@ -1,3 +1,4 @@
+2026-09-16 — EZPL ~S,STATUS/~S,LABEL: поле очереди — размер буфера виджета (len _print_buffer), не внутренний remaining; docs/printing/README.md.
 2026-09-16 — PrinterEmul: ensure_crlf_suffix на все ответы клиенту (query и legacy raw send); tests/test_core/test_line_ending.py.
 2026-09-16 — core/printing/line_ending.py: опциональные CR/LF (в т.ч. сочетания) для текстовых команд; EZPL ~HI/~S,STATUS/~S,LABEL; общий try_take_exact_command для ZPL.
 2026-09-16 — tests/test_core/test_printer_ezpl.py: ~S,LABEL/STATUS без обязательного \\r\\n.
