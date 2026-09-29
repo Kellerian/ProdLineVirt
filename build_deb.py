@@ -1,17 +1,19 @@
 """Build a Debian package from the Linux PyInstaller onedir.
 
-On a non-Linux host the process prints an error and exits with status 1.
-``dpkg-deb`` is invoked only on Linux when the command is on PATH.
+On Linux, ``--deb`` / this script always re-run the same PyInstaller onedir
+freeze as ``build_project.py --linux``, then stage the tree and call
+``dpkg-deb --build``. The resulting ``.deb`` is also copied next to the
+onedir under ``build/install/dmcLineEmulator/``.
 
-Freeze policy (``--deb`` / this script): always re-run the same PyInstaller
-onedir freeze as ``build_project.py --linux``, then stage the tree and call
-``dpkg-deb --build``. ``--linux`` remains freeze-only.
+On Windows, ``--deb`` / this script orchestrate the same native Linux path
+inside the **default** WSL distro (``wsl.exe`` without ``-d``): sync sources
+to a Linux ``/tmp`` workdir, create a venv, run ``build_project.py --deb``,
+copy the ``.deb`` to ``build/install/dmcLineEmulator/``, then remove the
+temp tree. ``--linux`` (freeze-only) on Windows still exits with an error.
 
 After freeze on Linux (before ``dpkg-deb``), ``smoke_check_linux_onedir``
 runs ``ldd`` on the frozen ELF and fails if any shared library is
-``not found``. That step is a no-op on Windows (never reached: the
-``--linux`` / ``--deb`` guards exit first; the function also returns
-immediately if ``platform.system()`` is not Linux).
+``not found``. That step is a no-op on non-Linux hosts.
 
 Use the project venv:
 
@@ -23,6 +25,7 @@ from __future__ import annotations
 import os
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -40,6 +43,16 @@ PIXMAP_NAME: str = "dmclineemulator.png"
 DESKTOP_NAME: str = "dmclineemulator.desktop"
 CONTROL_TEMPLATE_NAME: str = "control.in"
 VERSION_PLACEHOLDER: str = "@VERSION@"
+DEBIAN_PACKAGING_DOCS: str = "docs/line_emulator/debian_packaging.md"
+WSL_SYNC_EXCLUDES: tuple[str, ...] = (
+    "venv",
+    "build/install",
+    "build/tmp",
+    "__pycache__",
+    ".git",
+    ".idea",
+    "*.pyc",
+)
 
 _PROJECT_VERSION_RE = re.compile(
     r"^(?P<numeric>(?:\d+\.)*\d+)\.(?P<tag>[abr]\d+)$",
@@ -254,8 +267,8 @@ def smoke_check_linux_onedir(install_dir: Path | None = None) -> None:
     ``dpkg-deb``. That way a broken onedir is not packed.
 
     On a non-Linux host this function returns immediately (no ``ldd``,
-    no ELF). Windows ``--deb`` never reaches it because ``require_linux``
-    exits first.
+    no ELF). Windows ``--deb`` never reaches it: the host routes through
+    ``build_deb_via_wsl`` instead of the local freeze path.
 
     Args:
         install_dir: PyInstaller dist parent (default ``build/install``).
@@ -517,12 +530,418 @@ def package_frozen_onedir(
     return deb_path
 
 
+def copy_deb_to_install_dir(
+    deb_path: Path,
+    *,
+    install_dir: Path | None = None,
+) -> Path:
+    """Copy a built ``.deb`` next to the PyInstaller onedir.
+
+    Args:
+        deb_path: Source ``.deb`` file (typically under ``build/deb/``).
+        install_dir: Parent of ``dmcLineEmulator`` (default ``INSTALL_DIR``).
+
+    Returns:
+        Destination path ``…/dmcLineEmulator/<name>.deb``.
+
+    Raises:
+        FileNotFoundError: If ``deb_path`` is not a file.
+    """
+    if not deb_path.is_file():
+        raise FileNotFoundError(f"Debian package not found: {deb_path}")
+    parent = INSTALL_DIR if install_dir is None else install_dir
+    dest_dir = parent / ONEDIR_DIR_NAME
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / deb_path.name
+    shutil.copy2(deb_path, dest)
+    print(f"Copied Debian package to {dest}")
+    return dest
+
+
+def find_wsl_executable() -> str | None:
+    """Locate ``wsl`` / ``wsl.exe`` on PATH.
+
+    Returns:
+        Absolute or PATH-resolved executable name, or ``None`` if missing.
+    """
+    return shutil.which("wsl") or shutil.which("wsl.exe")
+
+
+def wsl_argv(wsl: str, *remote_args: str) -> list[str]:
+    """Build a ``wsl`` argv that never selects a distro via ``-d``.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        *remote_args: Arguments after ``--`` (for example ``bash``, ``-lc``,
+            command).
+
+    Returns:
+        Full argv for ``subprocess`` (``[wsl, "--", …]``).
+    """
+    return [wsl, "--", *remote_args]
+
+
+def run_wsl_captured(
+    wsl: str,
+    *remote_args: str,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]:
+    """Run a WSL command and capture combined text output.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        *remote_args: Arguments after ``--``.
+        check: When True, raise ``CalledProcessError`` on non-zero exit.
+
+    Returns:
+        Completed process with ``text=True`` stdout/stderr streams.
+    """
+    return subprocess.run(
+        wsl_argv(wsl, *remote_args),
+        capture_output=True,
+        text=True,
+        check=check,
+    )
+
+
+def run_wsl_bash_streaming(wsl: str, bash_command: str) -> int:
+    """Run ``bash -lc`` in default WSL and print stdout/stderr lines.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        bash_command: Shell script passed to ``bash -lc``.
+
+    Returns:
+        Process exit code (``0`` on success).
+    """
+    proc = subprocess.Popen(
+        wsl_argv(wsl, "bash", "-lc", bash_command),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        print(line, end="")
+    return int(proc.wait())
+
+
+def resolve_windows_path_in_wsl(wsl: str, windows_path: Path) -> str:
+    """Convert a Windows path to a WSL path via ``wslpath -a``.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        windows_path: Absolute or relative Windows path.
+
+    Returns:
+        Absolute path as seen inside the default WSL distro.
+
+    Raises:
+        SystemExit: If ``wslpath`` fails.
+    """
+    absolute = windows_path.resolve()
+    completed = run_wsl_captured(
+        wsl,
+        "wslpath",
+        "-a",
+        str(absolute),
+    )
+    path_text = (completed.stdout or "").strip()
+    if completed.returncode != 0 or not path_text:
+        detail = (completed.stderr or completed.stdout or "").strip()
+        print(
+            "Failed to convert Windows path to WSL via wslpath: "
+            f"{absolute}. {detail}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return path_text
+
+
+def preflight_wsl_tools(wsl: str) -> None:
+    """Ensure default WSL has ``python3`` and ``dpkg-deb``.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+
+    Raises:
+        SystemExit: When either tool is missing (code ``1``).
+    """
+    completed = run_wsl_captured(
+        wsl,
+        "bash",
+        "-lc",
+        "command -v python3 && command -v dpkg-deb",
+    )
+    if completed.returncode != 0:
+        print(
+            "Default WSL is missing python3 and/or dpkg-deb. "
+            "Install the documented prerequisites "
+            f"({DEBIAN_PACKAGING_DOCS}) inside the default distro, "
+            "then retry. Do not use docker-desktop; wsl is invoked "
+            "without -d.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
+def create_wsl_temp_dir(wsl: str) -> str:
+    """Create a temporary directory on the Linux filesystem (``/tmp``).
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+
+    Returns:
+        Absolute Linux path of the new empty directory.
+
+    Raises:
+        SystemExit: If ``mktemp`` fails.
+    """
+    completed = run_wsl_captured(wsl, "mktemp", "-d")
+    remote = (completed.stdout or "").strip()
+    if completed.returncode != 0 or not remote:
+        detail = (completed.stderr or completed.stdout or "").strip()
+        print(
+            f"Failed to create a WSL temp directory under /tmp: {detail}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return remote
+
+
+def sync_project_to_wsl(
+    wsl: str,
+    project_root: Path,
+    remote_dir: str,
+) -> None:
+    """Copy project sources into a WSL temp dir, excluding heavy trees.
+
+    Uses a single ``tar`` pipe inside WSL so Windows ``venv/`` and
+    ``build/install/`` are never written into from Linux.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        project_root: Windows (or host) repository root.
+        remote_dir: Destination directory on the Linux FS.
+
+    Raises:
+        SystemExit: If the sync command fails.
+    """
+    src_wsl = resolve_windows_path_in_wsl(wsl, project_root)
+    exclude_args = " ".join(
+        f"--exclude={shlex.quote(pattern)}" for pattern in WSL_SYNC_EXCLUDES
+    )
+    command = (
+        f"tar -C {shlex.quote(src_wsl)} {exclude_args} -cf - . "
+        f"| tar -C {shlex.quote(remote_dir)} -xf -"
+    )
+    completed = run_wsl_captured(wsl, "bash", "-lc", command)
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()
+        print(
+            f"Failed to sync project sources into WSL temp: {detail}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
+def run_remote_deb_build(wsl: str, remote_dir: str) -> None:
+    """Create a Linux venv in ``remote_dir`` and run ``build_project.py --deb``.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        remote_dir: Synced project copy on the Linux FS.
+
+    Raises:
+        SystemExit: If venv/pip/freeze/pack returns non-zero.
+    """
+    command = (
+        f"cd {shlex.quote(remote_dir)} && "
+        "python3 -m venv venv && "
+        "venv/bin/pip install -U pip && "
+        "venv/bin/pip install -r requirements.txt && "
+        "venv/bin/python build_project.py --deb"
+    )
+    exit_code = run_wsl_bash_streaming(wsl, command)
+    if exit_code != 0:
+        print(
+            "WSL Debian build failed "
+            f"(exit {exit_code}). See output above and "
+            f"{DEBIAN_PACKAGING_DOCS}.",
+            file=sys.stderr,
+        )
+        sys.exit(exit_code if exit_code else 1)
+
+
+def find_remote_deb(wsl: str, remote_dir: str) -> str:
+    """Locate the built ``.deb`` under ``remote_dir/build/deb/``.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        remote_dir: Synced project copy on the Linux FS.
+
+    Returns:
+        Absolute Linux path of the ``.deb`` file.
+
+    Raises:
+        SystemExit: If no matching artifact is found.
+    """
+    # Quote only the directory; leave the glob unquoted so bash expands `*`.
+    deb_glob = (
+        f"{shlex.quote(remote_dir)}/build/deb/"
+        f"{PACKAGE_NAME}_*_amd64.deb"
+    )
+    completed = run_wsl_captured(
+        wsl,
+        "bash",
+        "-lc",
+        f"ls -1 {deb_glob} 2>/dev/null | head -n 1",
+    )
+    remote_deb = (completed.stdout or "").strip()
+    if completed.returncode != 0 or not remote_deb:
+        print(
+            "WSL build finished but no .deb was found under "
+            f"{remote_dir}/build/deb/ "
+            f"(expected {PACKAGE_NAME}_*_amd64.deb).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return remote_deb
+
+
+def copy_remote_deb_to_install(
+    wsl: str,
+    remote_deb: str,
+    *,
+    install_dir: Path | None = None,
+) -> Path:
+    """Copy a WSL-built ``.deb`` into ``build/install/dmcLineEmulator/``.
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        remote_deb: Absolute Linux path of the ``.deb``.
+        install_dir: Parent of ``dmcLineEmulator`` (default ``INSTALL_DIR``).
+
+    Returns:
+        Destination path on the Windows host.
+
+    Raises:
+        SystemExit: If the copy fails or the destination file is missing.
+    """
+    parent = INSTALL_DIR if install_dir is None else install_dir
+    dest_dir = parent / ONEDIR_DIR_NAME
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_wsl = resolve_windows_path_in_wsl(wsl, dest_dir)
+    deb_name = Path(remote_deb).name
+    command = (
+        f"mkdir -p {shlex.quote(dest_wsl)} && "
+        f"cp {shlex.quote(remote_deb)} {shlex.quote(dest_wsl)}/"
+    )
+    completed = run_wsl_captured(wsl, "bash", "-lc", command)
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()
+        print(
+            f"Failed to copy .deb from WSL to {dest_dir}: {detail}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    dest = dest_dir / deb_name
+    if not dest.is_file():
+        print(
+            f"Expected .deb at {dest} after WSL copy, but the file is missing.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"Copied Debian package to {dest}")
+    return dest
+
+
+def cleanup_wsl_temp(wsl: str, remote_dir: str) -> None:
+    """Remove a WSL temporary directory (best-effort).
+
+    Args:
+        wsl: Path or name of the WSL launcher.
+        remote_dir: Absolute Linux path previously created under ``/tmp``.
+    """
+    if not remote_dir:
+        return
+    try:
+        completed = run_wsl_captured(
+            wsl,
+            "bash",
+            "-lc",
+            f"rm -rf {shlex.quote(remote_dir)}",
+        )
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout or "").strip()
+            print(
+                f"Warning: failed to remove WSL temp {remote_dir}: {detail}",
+                file=sys.stderr,
+            )
+    except OSError as exc:
+        print(
+            f"Warning: failed to remove WSL temp {remote_dir}: {exc}",
+            file=sys.stderr,
+        )
+
+
+def build_deb_via_wsl(
+    *,
+    project_root: Path | None = None,
+    install_dir: Path | None = None,
+) -> Path:
+    """Build a ``.deb`` on Windows through the default WSL distro.
+
+    Discovers ``wsl`` without ``-d``, checks ``python3`` / ``dpkg-deb``,
+    syncs sources to a Linux ``/tmp`` workdir (excluding ``venv/``,
+    ``build/install/``, etc.), runs the native ``build_project.py --deb``
+    path inside a fresh venv, copies the artifact to
+    ``build/install/dmcLineEmulator/``, and always deletes the temp tree.
+
+    Args:
+        project_root: Repository root to sync (default ``ROOT_DIR``).
+        install_dir: Windows install parent for the copied ``.deb``
+            (default ``INSTALL_DIR``).
+
+    Returns:
+        Path of the ``.deb`` on the Windows host.
+
+    Raises:
+        SystemExit: On missing WSL/tools, sync/build/copy failure.
+    """
+    wsl = find_wsl_executable()
+    if wsl is None:
+        print(
+            "wsl.exe not found on PATH. Install WSL2, set a Linux default "
+            "distro (not docker-desktop), and meet the prerequisites in "
+            f"{DEBIAN_PACKAGING_DOCS}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    preflight_wsl_tools(wsl)
+    root = ROOT_DIR if project_root is None else project_root
+    remote_tmp: str | None = None
+    try:
+        remote_tmp = create_wsl_temp_dir(wsl)
+        print(f"WSL build workspace: {remote_tmp}")
+        sync_project_to_wsl(wsl, root, remote_tmp)
+        run_remote_deb_build(wsl, remote_tmp)
+        remote_deb = find_remote_deb(wsl, remote_tmp)
+        return copy_remote_deb_to_install(
+            wsl,
+            remote_deb,
+            install_dir=install_dir,
+        )
+    finally:
+        if remote_tmp is not None:
+            cleanup_wsl_temp(wsl, remote_tmp)
+
+
 def run(argv: list[str] | None = None) -> None:
     """Freeze Linux onedir, then stage and pack a ``.deb``.
 
-    Always re-runs PyInstaller (same path as ``build_project.py --linux``)
-    before packaging so the embedded ``client_info.VERSION`` matches the
-    Debian ``Version`` field.
+    On Linux this always re-runs PyInstaller before packaging. On Windows
+    it delegates to ``build_deb_via_wsl`` via ``build_project.main``.
 
     Args:
         argv: Extra arguments after the implicit ``--deb`` flag.

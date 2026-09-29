@@ -40,7 +40,7 @@ class TestStdoutDecoding(unittest.TestCase):
 
 
 class TestLinuxCliGuard(unittest.TestCase):
-    """``--linux`` / ``--deb`` must refuse on non-Linux hosts."""
+    """``--linux`` must refuse on Windows; ``--deb`` uses WSL there."""
 
     def test_parse_linux_and_deb_flags(self) -> None:
         self.assertFalse(parse_cli_args([]).linux)
@@ -68,6 +68,16 @@ class TestLinuxCliGuard(unittest.TestCase):
                     with self.assertRaises(SystemExit) as raised:
                         main(["--linux"])
         self.assertEqual(raised.exception.code, 1)
+        gen_ui.assert_not_called()
+        freeze.assert_not_called()
+
+    def test_main_deb_on_windows_delegates_to_wsl(self) -> None:
+        with patch("build_project.platform.system", return_value="Windows"):
+            with patch("build_deb.build_deb_via_wsl") as wsl_build:
+                with patch("build_project.generate_ui_files") as gen_ui:
+                    with patch("build_project.build_modules") as freeze:
+                        main(["--deb"])
+        wsl_build.assert_called_once_with()
         gen_ui.assert_not_called()
         freeze.assert_not_called()
 

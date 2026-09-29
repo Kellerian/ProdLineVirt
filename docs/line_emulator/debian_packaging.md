@@ -1,6 +1,6 @@
 # Сборка и установка `.deb` (dmcLineEmulator)
 
-Пошаговая инструкция для разработчика: собрать установочный пакет **dmclineemulator** на **WSL2 Ubuntu 22.04+** или **Debian 12** (amd64) и установить его через `dpkg`, не читая исходники приложения.
+Пошаговая инструкция для разработчика: собрать установочный пакет **dmclineemulator** на **Linux** (native Debian 12 / Ubuntu 22.04+) или с **Windows** через **default WSL2** и установить его через `dpkg`, не читая исходники приложения.
 
 Версия приложения и пакета берётся из `client_info.VERSION` (актуально: `1.0.0.1.b0007`).
 
@@ -8,10 +8,14 @@
 
 | Среда | Что можно |
 |-------|-----------|
-| **Linux / WSL2** (целевая) | venv → PyInstaller onedir → `dpkg-deb` → `.deb` |
-| **Windows** | Только обычная сборка: `.\venv\Scripts\python.exe build_project.py` (exe/onedir). Флаги `--linux`, `--deb` и скрипт `build_deb.py` печатают ошибку и завершаются с кодом `1` |
+| **Linux** (native) | `venv` → PyInstaller onedir → smoke `ldd` → `dpkg-deb` → `.deb` в `build/deb/` **и** копия в `build/install/dmcLineEmulator/` |
+| **Windows** + **default WSL** | `.\venv\Scripts\python.exe build_project.py --deb` (или `build_deb.py`) оркестрирует тот же Linux-путь внутри default-дистрибутива (`wsl` / `wsl.exe` **без** `-d`); итоговый `.deb` на Windows — в `build/install/dmcLineEmulator/` |
+| **Windows**, флаг `--linux` | Отказ: stderr + exit `1` до freeze (freeze-only **не** идёт через WSL) |
+| **Windows**, без флагов | Обычная сборка exe/onedir: `.\venv\Scripts\python.exe build_project.py` |
 
-PyInstaller **не** кросс-компилирует Windows → Linux ELF. Честный `.deb` получается только на Linux.
+PyInstaller **не** кросс-компилирует Windows → Linux ELF. Честный `.deb` получается только на Linux (native или внутри WSL). Скрипт **не** вызывает `sudo apt` / `apt-get install` — пакеты предусловий ставятся вручную в целевом дистрибутиве (в т.ч. в default WSL).
+
+**Default WSL:** используется только дистрибутив по умолчанию. Не указывайте `-d`, не ориентируйтесь на `docker-desktop`. Проверка: `wsl -l -v` — нужный Linux-дистр должен быть `Default`.
 
 **glibc:** бинарь привязан к поколению хоста сборки. Собирайте на целевом дистрибутиве (Debian 12 / Ubuntu 22.04+). Пакет с Ubuntu 24.04 может не запуститься на Debian 12.
 
@@ -31,14 +35,25 @@ Apt-репозиторий, GPG-подпись и CI в этом докумен�
 Имя файла артефакта:
 
 ```text
-build/deb/dmclineemulator_1.0.0.1~b0007-1_amd64.deb
+dmclineemulator_1.0.0.1~b0007-1_amd64.deb
 ```
 
 (подставьте актуальную Debian-версию из `VERSION`).
 
+| Хост сборки | Где лежит файл |
+|-------------|----------------|
+| Native Linux | `build/deb/…` (основной путь после `dpkg-deb`) **и** копия `build/install/dmcLineEmulator/…` (`copy_deb_to_install_dir`) |
+| Windows → WSL | на Windows-хосте: `build/install/dmcLineEmulator/…` (после копирования из temp WSL); каталог `build/deb/` на Windows **не обязателен** |
+
 ## Предусловия (хост)
 
-Нужны: **WSL2 с Ubuntu 22.04+** или **Debian 12**, архитектура **amd64**, доступ в интернет для `apt` / `pip` / Git (зависимость `pylibdmtx` ставится с GitHub).
+Нужны: **WSL2 с Ubuntu 22.04+** или **Debian 12** (amd64), доступ в интернет для `apt` / `pip` / Git (зависимость `pylibdmtx` ставится с GitHub).
+
+Для сборки с Windows через WSL дополнительно:
+
+- `wsl` / `wsl.exe` на `PATH`;
+- в **default** distro доступны `python3` и `dpkg-deb` (скрипт проверяет `command -v`; при отсутствии — exit `1` со ссылкой на этот документ);
+- apt-пакеты из раздела ниже установлены **вручную внутри WSL** (скрипт их не ставит).
 
 ### Пакеты для venv и сборки `.deb`
 
@@ -70,6 +85,8 @@ Runtime-зависимости GUI (xcb, GL, fontconfig и т.д.) подтян�
 
 ## Подготовка репозитория и venv
 
+### Native Linux
+
 Из корня клона репозитория:
 
 ```bash
@@ -84,13 +101,21 @@ pip install -r requirements.txt
 
 Дальше все команды сборки — только через `venv/bin/python` (или при активированном venv).
 
+### Windows → default WSL
+
+На Windows достаточно проектного venv для запуска оркестратора (`build_project.py` / `build_deb.py`). Скрипт **не** использует Windows `venv/` для freeze Linux: внутри WSL создаётся отдельный temp-каталог на Linux FS (`mktemp -d`, обычно под `/tmp`), туда копируются исходники, затем в temp — свой `python3 -m venv` и `pip install -r requirements.txt`.
+
+Исключения при sync (`WSL_SYNC_EXCLUDES` в `build_deb.py`): `venv`, `build/install`, `build/tmp`, `__pycache__`, `.git`, `.idea`, `*.pyc`. Windows `venv/` и `build/install/` не затираются Linux-freeze. Временный каталог WSL удаляется в `finally` и при успехе, и при ошибке.
+
 ### Риск: Windows-only пакеты в `requirements.txt`
 
 В `requirements.txt` есть `pefile` и `pywin32-ctypes` (нужны Windows / PyInstaller на Windows). На Linux `pip install -r requirements.txt` обычно проходит, но возможны предупреждения или сбои установки. **Не меняйте** `requirements.txt` ради Linux без отдельной задачи: при блокере зафиксируйте ошибку pip и обходите точечно (платформенные маркеры — вне объёма этой инструкции).
 
 ## Сборка `.deb`
 
-Одна команда (всегда заново freeze onedir → smoke `ldd` → `dpkg-deb`):
+### Native Linux
+
+Одна команда (всегда заново freeze onedir → smoke `ldd` → `dpkg-deb` → копия в install):
 
 ```bash
 venv/bin/python build_project.py --deb
@@ -106,25 +131,59 @@ venv/bin/python build_deb.py
 
 1. Генерация UI (`pyside6-uic`) и PyInstaller по `build/spec/main.spec` → `build/install/dmcLineEmulator/`.
 2. Smoke: `ldd` по ELF `build/install/dmcLineEmulator/dmcLineEmulator`. Любая строка `=> not found` — **сборка падает**, `.deb` не создаётся.
-3. Staging и `dpkg-deb --build --root-owner-group`.
+3. Staging и `dpkg-deb --build --root-owner-group` → `build/deb/…`.
+4. `copy_deb_to_install_dir`: тот же файл копируется в `build/install/dmcLineEmulator/`.
 
-Артефакт:
+Артефакты:
 
 ```text
 build/deb/dmclineemulator_<debian_ver>_amd64.deb
+build/install/dmcLineEmulator/dmclineemulator_<debian_ver>_amd64.deb
 ```
 
 Пример при `VERSION = 1.0.0.1.b0007`:
 
 ```text
 build/deb/dmclineemulator_1.0.0.1~b0007-1_amd64.deb
+build/install/dmcLineEmulator/dmclineemulator_1.0.0.1~b0007-1_amd64.deb
 ```
 
-Только freeze без пакета (отладка onedir):
+Только freeze без пакета (отладка onedir; **только Linux**):
 
 ```bash
 venv/bin/python build_project.py --linux
 ```
+
+### Windows (оркестрация через default WSL)
+
+Из корня репозитория на Windows (интерпретатор из проектного `venv`):
+
+```powershell
+.\venv\Scripts\python.exe build_project.py --deb
+```
+
+Эквивалент:
+
+```powershell
+.\venv\Scripts\python.exe build_deb.py
+```
+
+Поведение (`build_deb.build_deb_via_wsl`):
+
+1. Найти `wsl` / `wsl.exe` на `PATH`; вызов **без** `-d` (`wsl -- …`).
+2. Preflight: в default distro есть `python3` и `dpkg-deb`.
+3. `mktemp -d` на Linux FS → sync исходников через `tar` с исключениями выше.
+4. В temp: `python3 -m venv` → `pip install -r requirements.txt` → `venv/bin/python build_project.py --deb` (нативный Linux-путь: freeze → smoke → pack).
+5. Найти `.deb` в temp (`…/build/deb/dmclineemulator_*_amd64.deb`) и скопировать на Windows в `build/install/dmcLineEmulator/`.
+6. Удалить temp WSL (`cleanup_wsl_temp` в `finally`).
+
+Итоговый файл на Windows-хосте:
+
+```text
+build/install/dmcLineEmulator/dmclineemulator_<debian_ver>_amd64.deb
+```
+
+(рядом с `dmcLineEmulator.exe`, если ранее собирали Windows-onedir). Локальный Windows-freeze при `--deb` **не** выполняется.
 
 ### Содержимое пакета
 
@@ -150,11 +209,13 @@ venv/bin/python build_project.py --linux
 
 ## Установка
 
+На Linux-машине (подставьте имя файла из `build/deb/` или из `build/install/dmcLineEmulator/`):
+
 ```bash
 sudo dpkg -i build/deb/dmclineemulator_1.0.0.1~b0007-1_amd64.deb
 ```
 
-Подставьте имя файла из `build/deb/`. Если dpkg пожалуется на незакрытые зависимости:
+Если dpkg пожалуется на незакрытые зависимости:
 
 ```bash
 sudo apt-get install -f
@@ -187,13 +248,28 @@ dpkg-deb -I build/deb/dmclineemulator_*.deb
 dpkg-deb -c build/deb/dmclineemulator_*.deb | head
 ```
 
+После сборки с Windows путь к тому же файлу:
+
+```powershell
+Get-ChildItem build\install\dmcLineEmulator\*.deb
+```
+
 В control должны быть `Package: dmclineemulator`, `Version` с `~` и `-1`, `Architecture: amd64`. В списке файлов — пути под `./opt/dmclineemulator/` и `.desktop` / pixmap.
 
-## Чеклист «с нуля на WSL/Debian»
+## Чеклист «с нуля»
 
-1. Установить пакеты из раздела «Предусловия».
+### Native Linux / вручную внутри WSL
+
+1. Установить пакеты из раздела «Предусловия» (вручную, не из скрипта сборки).
 2. Клонировать репозиторий, создать `venv`, `pip install -r requirements.txt`.
 3. `venv/bin/python build_project.py --deb`.
-4. Убедиться, что в `build/deb/` появился `.deb` с версией из `client_info.VERSION`.
+4. Убедиться, что `.deb` есть в `build/deb/` и копия в `build/install/dmcLineEmulator/`.
 5. `sudo dpkg -i …` и запуск `/opt/dmclineemulator/dmcLineEmulator`.
 6. При необходимости — `sudo apt remove dmclineemulator`.
+
+### Windows → default WSL
+
+1. Установить WSL2, назначить Linux default (не `docker-desktop`); вручную поставить apt-пакеты из «Предусловий» **внутри** default distro.
+2. На Windows: проектный `venv`, из корня репозитория `.\venv\Scripts\python.exe build_project.py --deb`.
+3. Убедиться, что на Windows появился `build/install/dmcLineEmulator/dmclineemulator_*_amd64.deb`.
+4. Перенести `.deb` на целевой Debian/Ubuntu и установить через `dpkg` (см. выше).

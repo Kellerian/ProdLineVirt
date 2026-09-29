@@ -8,7 +8,7 @@
 | UI-форма | `forms/Main.py` → `Ui_MainWindow` |
 | Конфигурация | JSON через `core/main_ui/data.py` → `ConfigFile` |
 | Сборка onedir | `build_project.py` (Windows без флагов; Linux freeze-only: `--linux`) → `build/spec/main.spec` → `build/install/dmcLineEmulator/` |
-| Сборка `.deb` | Только Linux: см. [debian_packaging.md](debian_packaging.md); команды `build_project.py --deb` / `build_deb.py` → `build/deb/dmclineemulator_<debian_ver>_amd64.deb` |
+| Сборка `.deb` | Linux native или Windows через default WSL: см. [debian_packaging.md](debian_packaging.md); `build_project.py --deb` / `build_deb.py` → на Linux `build/deb/` + копия в `build/install/dmcLineEmulator/`; на Windows итоговый файл в `build/install/dmcLineEmulator/*.deb` |
 
 ## Назначение
 
@@ -326,8 +326,9 @@ flowchart LR
 |--------------|-----------|
 | Windows, без флагов | Исторический onedir: exe в `build/install/dmcLineEmulator/` |
 | Linux: `build_project.py --linux` | Freeze-only: UI + PyInstaller → ELF onedir в `build/install/dmcLineEmulator/`; `.deb` не собирается |
-| Linux: `build_project.py --deb` или `build_deb.py` | Всегда заново freeze (тот же путь, что `--linux`), затем staging и `dpkg-deb --build --root-owner-group` |
-| Windows: `--linux` / `--deb` или `build_deb.py` | Сообщение в stderr, код выхода `1`; UI, PyInstaller и `dpkg-deb` не запускаются |
+| Linux: `build_project.py --deb` или `build_deb.py` | Всегда заново freeze (как `--linux`), smoke `ldd`, staging и `dpkg-deb`; `.deb` в `build/deb/` и копия в `build/install/dmcLineEmulator/` |
+| Windows: `build_project.py --deb` или `build_deb.py` | Оркестрация через **default WSL** (`wsl` без `-d`, без локального freeze): temp на `/tmp`, venv + native `--deb` внутри WSL, `.deb` копируется в `build/install/dmcLineEmulator/`, temp удаляется всегда |
+| Windows: `--linux` | Сообщение в stderr, код выхода `1` до freeze (freeze-only через WSL **не** поддерживается) |
 
 Подзадача **#9** плана эмулятора сканера: зависимости сканера (`pyserial`, `QtAwesome`) должны попадать в собранный дистрибутив.
 
@@ -341,9 +342,18 @@ flowchart LR
 
 `build/install/dmcLineEmulator/dmcLineEmulator.exe`
 
+Пакет `.deb` с Windows-хоста (default WSL; apt в WSL ставится вручную, скрипт не вызывает `apt`):
+
+```powershell
+.\venv\Scripts\python.exe build_project.py --deb
+# или: .\venv\Scripts\python.exe build_deb.py
+```
+
+Итог на Windows: `build/install/dmcLineEmulator/dmclineemulator_<debian_ver>_amd64.deb` (рядом с exe, если он уже собран). Подробности оркестрации — в [debian_packaging.md](debian_packaging.md).
+
 ### Команда сборки (Linux / WSL2)
 
-Только на Linux (native или WSL2), Python из `venv`. На Windows `--linux` / `--deb` / `build_deb.py` завершаются с кодом `1` до freeze.
+Freeze-only и нативный `--deb` — на Linux (или **внутри** WSL вручную). С Windows флаг `--linux` по-прежнему завершается с кодом `1` до freeze; `--deb` с Windows идёт через оркестратор WSL (см. выше).
 
 Freeze-only (onedir, без `.deb`):
 
@@ -353,18 +363,18 @@ venv/bin/python build_project.py --linux
 
 Итоговый бинарь — `build/install/dmcLineEmulator/dmcLineEmulator` (ELF).
 
-Пакет `.deb` (всегда пересобирает onedir → smoke `ldd` → `dpkg-deb`):
+Пакет `.deb` на native Linux (всегда пересобирает onedir → smoke `ldd` → `dpkg-deb` → копия в install):
 
 ```bash
 venv/bin/python build_project.py --deb
 # или: venv/bin/python build_deb.py
 ```
 
-Артефакт: `build/deb/dmclineemulator_<debian_ver>_amd64.deb` (`client_info.VERSION` `1.0.0.1.b0007` → `1.0.0.1~b0007-1`). Пакет `dmclineemulator`, файлы в `/opt/dmclineemulator/`.
+Артефакты: `build/deb/dmclineemulator_<debian_ver>_amd64.deb` и копия `build/install/dmcLineEmulator/dmclineemulator_<debian_ver>_amd64.deb` (`client_info.VERSION` `1.0.0.1.b0007` → `1.0.0.1~b0007-1`). Пакет `dmclineemulator`, файлы в `/opt/dmclineemulator/`.
 
-Пошаговые предусловия (WSL/Debian, venv, apt-пакеты), установка `dpkg -i`, удаление, Depends/Recommends и риски `pip` на Linux — в [debian_packaging.md](debian_packaging.md).
+Пошаговые предусловия (WSL/Debian, venv, ручной apt), Windows→WSL, установка `dpkg -i`, удаление, Depends/Recommends и риски `pip` на Linux — в [debian_packaging.md](debian_packaging.md).
 
-Автотесты staging, флагов и smoke (без реального `dpkg-deb` / ELF): `tests/test_core/test_build_deb.py`.
+Автотесты staging, флагов, WSL-оркестрации (моки) и smoke (без реального `dpkg-deb` / ELF / WSL): `tests/test_core/test_build_deb.py`, `tests/test_core/test_build_project.py`.
 
 ### Декодирование stdout внешних команд
 
@@ -422,7 +432,7 @@ PyInstaller не всегда подхватывает подмодули `seria
 - [scanner_unit_tests.md](scanner_unit_tests.md) — unit-тесты подсистемы сканера: mock COM, `ScannerEmul` без Qt, `ConfigFile.scanners`, wiring в transport/generator; COM refresh — `test_scanner_com_refresh.py`; Remove API — см. [frontend/widget-delete.md](frontend/widget-delete.md).
 - [com0com_setup.md](com0com_setup.md) — настройка виртуальных COM-портов com0com для тестирования сканера (подзадача #9).
 - [bulk-control.md](bulk-control.md) — меню «Управление», массовый start/stop/clear, `clear_data()` API, порядок pipeline (подзадача #10 плана serial barcode scanner).
-- Раздел «Сборка onedir (PyInstaller)» выше — кроссплатформенный `main.spec`; `--linux` / `--deb` / Windows; hiddenimports и BINARY libdmtx.
-- [debian_packaging.md](debian_packaging.md) — сборка и установка `.deb` на WSL2/Debian (предусловия, venv, `dpkg -i` / удаление, версия из `client_info.VERSION`).
+- Раздел «Сборка onedir (PyInstaller)» выше — кроссплатформенный `main.spec`; `--linux` / `--deb` (в т.ч. Windows→default WSL); hiddenimports и BINARY libdmtx.
+- [debian_packaging.md](debian_packaging.md) — сборка и установка `.deb`: native Linux и Windows через default WSL (предусловия, ручной apt, пути артефактов, `dpkg -i` / удаление, версия из `client_info.VERSION`).
 - [user-guides/scanner-widget.md](user-guides/scanner-widget.md) — пользовательские шаги: выбор COM, обновление списка портов (`tbRefreshPorts`), Run/Stop, удаление (`tbDelete`).
 - [user-guides/widget-delete.md](user-guides/widget-delete.md) — удаление любого виджета кнопкой «X» с холста.

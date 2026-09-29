@@ -11,11 +11,15 @@ from unittest.mock import patch
 import subprocess
 
 from build_deb import (
+    DEBIAN_PACKAGING_DOCS,
     DEBIAN_TEMPLATES_DIR,
     PACKAGE_NAME,
     PIXMAP_NAME,
     _try_brief_elf_start,
+    build_deb_via_wsl,
+    copy_deb_to_install_dir,
     dpkg_deb_is_available,
+    find_remote_deb,
     normalize_debian_version,
     package_frozen_onedir,
     parse_ldd_missing_libraries,
@@ -25,6 +29,7 @@ from build_deb import (
     smoke_check_linux_onedir,
     stage_debian_tree,
     strip_control_comments,
+    wsl_argv,
 )
 from build_project import main, parse_cli_args
 from client_info import VERSION
@@ -356,7 +361,7 @@ class TestDpkgDebGuard(unittest.TestCase):
 
 
 class TestBuildProjectDebFlag(unittest.TestCase):
-    """``--linux`` freeze-only; ``--deb`` freeze then pack."""
+    """``--linux`` freeze-only; ``--deb`` freeze then pack (+ install copy)."""
 
     def test_parse_deb_distinct_from_linux(self) -> None:
         linux_only = parse_cli_args(["--linux"])
@@ -378,18 +383,29 @@ class TestBuildProjectDebFlag(unittest.TestCase):
                                 with patch(
                                     "build_deb.package_frozen_onedir",
                                 ) as pack:
-                                    main(["--linux"])
+                                    with patch(
+                                        "build_deb.copy_deb_to_install_dir",
+                                    ) as copy_install:
+                                        main(["--linux"])
         smoke.assert_called_once()
         pack.assert_not_called()
+        copy_install.assert_not_called()
 
     def test_main_deb_packages_after_freeze_on_linux(self) -> None:
         order: list[str] = []
+        deb_artifact = Path("/tmp/dmclineemulator_1.0.0.1~b0007-1_amd64.deb")
 
         def _smoke(*_args: object, **_kwargs: object) -> None:
             order.append("smoke")
 
-        def _pack(*_args: object, **_kwargs: object) -> None:
+        def _pack(*_args: object, **_kwargs: object) -> Path:
             order.append("pack")
+            return deb_artifact
+
+        def _copy(path: Path, **_kwargs: object) -> Path:
+            order.append("copy")
+            self.assertEqual(path, deb_artifact)
+            return Path("/tmp/install/dmcLineEmulator") / path.name
 
         with patch("build_project.platform.system", return_value="Linux"):
             with patch("build_project.generate_ui_files") as gen_ui:
@@ -404,25 +420,261 @@ class TestBuildProjectDebFlag(unittest.TestCase):
                                     "build_deb.package_frozen_onedir",
                                     side_effect=_pack,
                                 ) as pack:
-                                    main(["--deb"])
+                                    with patch(
+                                        "build_deb.copy_deb_to_install_dir",
+                                        side_effect=_copy,
+                                    ) as copy_install:
+                                        main(["--deb"])
         gen_ui.assert_called_once()
         freeze.assert_called_once()
         pack.assert_called_once()
-        self.assertEqual(order, ["smoke", "pack"])
+        copy_install.assert_called_once()
+        self.assertEqual(order, ["smoke", "pack", "copy"])
 
-    def test_main_deb_refuses_on_windows_before_freeze(self) -> None:
+    def test_main_deb_on_windows_uses_wsl_not_local_freeze(self) -> None:
         with patch("build_project.platform.system", return_value="Windows"):
             with patch("build_project.generate_ui_files") as gen_ui:
                 with patch("build_project.build_modules") as freeze:
                     with patch(
                         "build_deb.package_frozen_onedir",
                     ) as pack:
-                        with self.assertRaises(SystemExit) as raised:
+                        with patch("build_deb.build_deb_via_wsl") as wsl_build:
                             main(["--deb"])
-        self.assertEqual(raised.exception.code, 1)
+        wsl_build.assert_called_once_with()
         gen_ui.assert_not_called()
         freeze.assert_not_called()
         pack.assert_not_called()
+
+
+class TestCopyDebToInstallDir(unittest.TestCase):
+    """``.deb`` is placed next to the onedir under install."""
+
+    def test_copy_creates_parent_and_copies_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            deb = root / "dmclineemulator_1.0.0.1~b0007-1_amd64.deb"
+            deb.write_bytes(b"deb-bytes")
+            install = root / "install"
+            dest = copy_deb_to_install_dir(deb, install_dir=install)
+            self.assertEqual(
+                dest,
+                install / "dmcLineEmulator" / deb.name,
+            )
+            self.assertTrue(dest.is_file())
+            self.assertEqual(dest.read_bytes(), b"deb-bytes")
+
+
+class TestWslDebOrchestration(unittest.TestCase):
+    """Windows ``--deb`` path through default WSL (mocked subprocess)."""
+
+    def test_wsl_argv_never_includes_distro_flag(self) -> None:
+        argv = wsl_argv("wsl.exe", "bash", "-lc", "true")
+        self.assertEqual(argv[:2], ["wsl.exe", "--"])
+        self.assertNotIn("-d", argv[1:2])
+
+    def test_find_remote_deb_leaves_glob_unquoted(self) -> None:
+        """bash must expand ``*``; quoting the whole pattern breaks ls."""
+        remote_dir = "/tmp/dmc-deb.XYZ"
+        expected_deb = (
+            f"{remote_dir}/build/deb/"
+            f"{PACKAGE_NAME}_1.0.0.1~b0007-1_amd64.deb"
+        )
+        captured_cmds: list[str] = []
+
+        def _captured(
+            wsl: str,
+            *remote_args: str,
+            check: bool = False,
+        ) -> subprocess.CompletedProcess[str]:
+            del check
+            self.assertEqual(wsl, "wsl.exe")
+            self.assertEqual(remote_args[:2], ("bash", "-lc"))
+            cmd = remote_args[2]
+            captured_cmds.append(cmd)
+            self.assertIn(f"{PACKAGE_NAME}_*_amd64.deb", cmd)
+            self.assertNotIn(f"'{PACKAGE_NAME}_*_amd64.deb'", cmd)
+            self.assertNotIn(f'"{PACKAGE_NAME}_*_amd64.deb"', cmd)
+            # Glob star must appear outside single-quoted segments.
+            self.assertRegex(cmd, rf"{PACKAGE_NAME}_[^'\"]*\*[^'\"]*_amd64\.deb")
+            return subprocess.CompletedProcess(
+                args=[wsl, "--", *remote_args],
+                returncode=0,
+                stdout=f"{expected_deb}\n",
+                stderr="",
+            )
+
+        with patch("build_deb.run_wsl_captured", side_effect=_captured):
+            found = find_remote_deb("wsl.exe", remote_dir)
+        self.assertEqual(found, expected_deb)
+        self.assertEqual(len(captured_cmds), 1)
+
+    def test_build_deb_via_wsl_missing_wsl_exits(self) -> None:
+        stderr = io.StringIO()
+        with patch("build_deb.find_wsl_executable", return_value=None):
+            with patch("sys.stderr", stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    build_deb_via_wsl()
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn(DEBIAN_PACKAGING_DOCS, stderr.getvalue())
+
+    def test_build_deb_via_wsl_preflight_failure_exits(self) -> None:
+        stderr = io.StringIO()
+        with patch("build_deb.find_wsl_executable", return_value="wsl.exe"):
+            with patch(
+                "build_deb.run_wsl_captured",
+                return_value=subprocess.CompletedProcess(
+                    args=[],
+                    returncode=1,
+                    stdout="",
+                    stderr="missing",
+                ),
+            ):
+                with patch("sys.stderr", stderr):
+                    with self.assertRaises(SystemExit) as raised:
+                        build_deb_via_wsl()
+        self.assertEqual(raised.exception.code, 1)
+        message = stderr.getvalue()
+        self.assertIn(DEBIAN_PACKAGING_DOCS, message)
+        self.assertIn("python3", message)
+
+    def test_build_deb_via_wsl_success_copies_and_cleans(self) -> None:
+        remote_tmp = "/tmp/dmc-deb.ABC"
+        remote_deb = (
+            f"{remote_tmp}/build/deb/"
+            "dmclineemulator_1.0.0.1~b0007-1_amd64.deb"
+        )
+        captured_argv: list[list[str]] = []
+        cleanup_calls: list[str] = []
+
+        def _assert_no_wsl_distro_flag(argv: list[str]) -> None:
+            """``wsl`` must use default distro (``--``, never ``-d``)."""
+            self.assertGreaterEqual(len(argv), 2)
+            self.assertEqual(argv[0], "wsl.exe")
+            self.assertEqual(argv[1], "--")
+
+        def _captured(
+            wsl: str,
+            *remote_args: str,
+            check: bool = False,
+        ) -> subprocess.CompletedProcess[str]:
+            del check
+            argv = [wsl, "--", *remote_args]
+            captured_argv.append(argv)
+            _assert_no_wsl_distro_flag(argv)
+            joined = " ".join(remote_args)
+            if remote_args[:1] == ("mktemp",):
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout=f"{remote_tmp}\n", stderr="",
+                )
+            if "wslpath" in remote_args:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout="/mnt/c/proj\n", stderr="",
+                )
+            if "command -v python3" in joined:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout="/usr/bin/python3\n", stderr="",
+                )
+            if "tar -C" in joined:
+                return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+            if "ls -1" in joined:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout=f"{remote_deb}\n", stderr="",
+                )
+            if "cp " in joined and remote_deb in joined:
+                return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+            if "rm -rf" in joined:
+                cleanup_calls.append(joined)
+                return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            install = Path(tmp) / "install"
+            dest_dir = install / "dmcLineEmulator"
+
+            def _copy_side_effect(
+                wsl: str,
+                remote: str,
+                *,
+                install_dir: Path | None = None,
+            ) -> Path:
+                del wsl, remote
+                parent = install if install_dir is None else install_dir
+                out_dir = parent / "dmcLineEmulator"
+                out_dir.mkdir(parents=True, exist_ok=True)
+                out = out_dir / Path(remote_deb).name
+                out.write_bytes(b"fake-deb")
+                return out
+
+            with patch("build_deb.find_wsl_executable", return_value="wsl.exe"):
+                with patch(
+                    "build_deb.run_wsl_captured",
+                    side_effect=_captured,
+                ):
+                    with patch(
+                        "build_deb.run_wsl_bash_streaming",
+                        return_value=0,
+                    ) as stream:
+                        with patch(
+                            "build_deb.copy_remote_deb_to_install",
+                            side_effect=_copy_side_effect,
+                        ):
+                            with patch(
+                                "build_deb.cleanup_wsl_temp",
+                                side_effect=lambda _w, path: cleanup_calls.append(
+                                    path,
+                                ),
+                            ):
+                                dest = build_deb_via_wsl(install_dir=install)
+            stream.assert_called_once()
+            self.assertTrue(dest.is_file())
+            self.assertEqual(dest.parent, dest_dir)
+            self.assertIn(remote_tmp, cleanup_calls)
+            for argv in captured_argv:
+                _assert_no_wsl_distro_flag(argv)
+
+    def test_build_deb_via_wsl_cleans_temp_on_remote_failure(self) -> None:
+        remote_tmp = "/tmp/dmc-deb.FAIL"
+        cleanup_paths: list[str] = []
+
+        def _captured(
+            wsl: str,
+            *remote_args: str,
+            check: bool = False,
+        ) -> subprocess.CompletedProcess[str]:
+            del check
+            argv = [wsl, "--", *remote_args]
+            self.assertEqual(argv[:2], ["wsl.exe", "--"])
+            joined = " ".join(remote_args)
+            if remote_args[:1] == ("mktemp",):
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout=f"{remote_tmp}\n", stderr="",
+                )
+            if "wslpath" in remote_args:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout="/mnt/c/proj\n", stderr="",
+                )
+            if "command -v python3" in joined:
+                return subprocess.CompletedProcess(
+                    argv, 0, stdout="/usr/bin/python3\n", stderr="",
+                )
+            if "tar -C" in joined:
+                return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+        with patch("build_deb.find_wsl_executable", return_value="wsl.exe"):
+            with patch("build_deb.run_wsl_captured", side_effect=_captured):
+                with patch(
+                    "build_deb.run_wsl_bash_streaming",
+                    return_value=42,
+                ):
+                    with patch(
+                        "build_deb.cleanup_wsl_temp",
+                        side_effect=lambda _w, path: cleanup_paths.append(path),
+                    ):
+                        with self.assertRaises(SystemExit) as raised:
+                            build_deb_via_wsl()
+        self.assertEqual(raised.exception.code, 42)
+        self.assertEqual(cleanup_paths, [remote_tmp])
 
 
 class TestBuildDebEntry(unittest.TestCase):

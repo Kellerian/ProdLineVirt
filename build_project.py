@@ -130,6 +130,9 @@ def run_external(command: str) -> None:
 def require_linux() -> None:
     """Abort with a non-zero exit code unless the host OS is Linux.
 
+    Used for freeze-only ``--linux``. Windows ``--deb`` does not call this;
+    it uses default-WSL orchestration instead.
+
     Raises:
         SystemExit: Always with code 1 when ``platform.system()`` is not
             ``Linux``. Does not return on that path.
@@ -137,8 +140,9 @@ def require_linux() -> None:
     current = platform.system()
     if current != "Linux":
         print(
-            "Linux onedir / .deb build is only supported on Linux "
-            f"(native or WSL2). Current OS: {current}.",
+            "Linux onedir build (--linux) is only supported on Linux "
+            f"(native or inside WSL). Current OS: {current}. "
+            "To build a .deb from Windows, use --deb (default WSL).",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -169,7 +173,8 @@ def parse_cli_args(argv: list[str]) -> Namespace:
         dest="linux",
         help=(
             "Build Linux onedir into build/install/dmcLineEmulator/. "
-            "Must run on Linux; other OS exit with an error."
+            "Must run on Linux; on Windows exits with an error "
+            "(freeze-only is not orchestrated via WSL)."
         ),
     )
     parser.add_argument(
@@ -177,9 +182,12 @@ def parse_cli_args(argv: list[str]) -> Namespace:
         action="store_true",
         dest="deb",
         help=(
-            "On Linux: always re-freeze the onedir (same as --linux), "
-            "then stage a Debian tree and run dpkg-deb. "
-            "On other OS exit with an error. Freeze-only: use --linux."
+            "On Linux: re-freeze the onedir (same as --linux), stage a "
+            "Debian tree, run dpkg-deb, and copy the .deb next to the "
+            "onedir under build/install/dmcLineEmulator/. "
+            "On Windows: run the same path inside the default WSL distro "
+            "(wsl.exe without -d) and copy the .deb to that install dir. "
+            "Freeze-only: use --linux (Linux host only)."
         ),
     )
     args = parser.parse_args(argv)
@@ -194,13 +202,11 @@ def main(argv: list[str] | None = None) -> None:
     historical pipeline: cleanup leftovers, ``generate_ui_files``,
     ``build_modules``, then ``cleanup_build_dir``.
 
-    ``--linux`` is freeze-only. ``--deb`` always re-freezes the onedir
-    (so the bundled version matches ``client_info.VERSION``) and then
-    stages ``build/deb/`` and runs ``dpkg-deb``.
-
-    On Linux, after freeze and before packaging, ``smoke_check_linux_onedir``
-    runs ``ldd`` on the ELF (fails on ``not found``). That smoke is not
-    run on Windows.
+    ``--linux`` is freeze-only and requires a Linux host. ``--deb`` on
+    Linux re-freezes, smoke-checks with ``ldd``, packs with ``dpkg-deb``,
+    and copies the ``.deb`` to ``build/install/dmcLineEmulator/``. On
+    Windows ``--deb`` delegates to ``build_deb.build_deb_via_wsl`` (default
+    WSL, no local freeze).
 
     Args:
         argv: CLI arguments without the program name. ``None`` is treated
@@ -209,6 +215,11 @@ def main(argv: list[str] | None = None) -> None:
             ``sys.argv[1:]`` from the ``__main__`` entry.
     """
     args = parse_cli_args([] if argv is None else argv)
+    if args.deb and platform.system() == "Windows":
+        from build_deb import build_deb_via_wsl
+
+        build_deb_via_wsl()
+        return
     if args.linux:
         require_linux()
     cleanup_previous_installation_files()
@@ -220,9 +231,10 @@ def main(argv: list[str] | None = None) -> None:
 
         smoke_check_linux_onedir()
     if args.deb:
-        from build_deb import package_frozen_onedir
+        from build_deb import copy_deb_to_install_dir, package_frozen_onedir
 
-        package_frozen_onedir()
+        deb_path = package_frozen_onedir()
+        copy_deb_to_install_dir(deb_path)
 
 
 if __name__ == "__main__":
