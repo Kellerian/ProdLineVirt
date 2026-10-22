@@ -1,3 +1,4 @@
+2026-10-22 — core/scanning/helpers.py: координаты кодов камеры получают случайный сдвиг ±4 px от узла сетки (code_coord, JITTER); VERSION 1.0.0.1.b0008.
 2026-09-29 — docs/line_emulator: Windows `--deb` через default WSL, пути артефактов (`build/install/dmcLineEmulator/*.deb`, на Linux ещё `build/deb/`), `--linux` на Windows по-прежнему отказ (debian_packaging.md, line_emulator.md, user-guides/debian-install.md).
 2026-09-29 — build_deb.find_remote_deb: glob `*_amd64.deb` больше не квотится целиком через shlex.quote (bash раскрывает `*` после успешной WSL-сборки).
 2026-09-29 — Line Emulator: Windows `--deb` / `build_deb.py` собирают `.deb` через default WSL (`wsl` без `-d`), копируют артефакт в `build/install/dmcLineEmulator/`, temp в WSL удаляется всегда; на Linux после pack — та же копия в install; `--linux` на Windows по-прежнему отказ.

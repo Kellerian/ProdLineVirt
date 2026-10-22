@@ -16,7 +16,7 @@ core/
 │   ├── line_emul.py      # холст, save/load JSON, add_printer(..., language=)
 │   └── data.py           # ConfigFile (printers, cameras, scanners, …)
 ├── printing/             # TCP-эмулятор принтера — см. ниже
-├── scanning/             # camera_widget, camera_core, …
+├── scanning/             # camera_widget, camera_core, helpers.code_coord (±4 px)
 ├── barcode_scanner/      # scanner_widget, ScannerEmul (COM)
 ├── transporting/         # transporter_widget
 └── generator/            # generator_widget
