@@ -11,6 +11,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from core.barcode_scanner.scanner_widget import ScannerWidget
+from core.controller.controller_widget import ControllerWidget
 from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.line_emul import MainLineField
 from core.printing.data import PrinterLanguage
@@ -122,12 +123,16 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
         self.scanner = _make_scanner("SCAN_1")
         self.transporter = TransporterWidget()
         self.generator = GeneratorWidget()
+        self.controller = ControllerWidget(
+            name="CTL_1", port=5020, queue_size=10
+        )
 
         self.window._device_widgets = {
             id(self.printer): self.printer,
             id(self.camera): self.camera,
             id(self.scanner): self.scanner,
         }
+        self.window._controller_widgets = {id(self.controller): self.controller}
         self.window._transporter_widgets = {id(self.transporter): self.transporter}
         self.window._generator_widgets = {id(self.generator): self.generator}
 
@@ -143,6 +148,8 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
                     call_order.append("camera")
                 elif widget is self.scanner:
                     call_order.append("scanner")
+                elif widget is self.controller:
+                    call_order.append("controller")
                 elif widget is self.transporter:
                     call_order.append("transporter")
                 elif widget is self.generator:
@@ -160,7 +167,14 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
 
         self.assertEqual(
             call_order,
-            ["printer", "camera", "scanner", "transporter", "generator"],
+            [
+                "printer",
+                "camera",
+                "scanner",
+                "controller",
+                "transporter",
+                "generator",
+            ],
         )
 
     def test_bulk_stop_all_reverse_order(self) -> None:
@@ -173,6 +187,8 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
                     call_order.append("generator")
                 elif widget is self.transporter:
                     call_order.append("transporter")
+                elif widget is self.controller:
+                    call_order.append("controller")
                 elif widget is self.printer:
                     call_order.append("printer")
                 elif widget is self.camera:
@@ -192,7 +208,14 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
 
         self.assertEqual(
             call_order,
-            ["generator", "transporter", "scanner", "camera", "printer"],
+            [
+                "generator",
+                "transporter",
+                "controller",
+                "scanner",
+                "camera",
+                "printer",
+            ],
         )
 
     def test_start_widgets_skips_already_running(self) -> None:
@@ -244,6 +267,33 @@ class TestMainLineFieldBulkControl(unittest.TestCase):
         self.assertTrue(self.printer.tbRun.isChecked())
         self.assertTrue(self.camera.tbRun.isChecked())
         self.assertTrue(self.scanner.tbRun.isChecked())
+
+    def test_bulk_start_controllers_only(self) -> None:
+        """Start controllers invokes setChecked on controller widgets."""
+        with patch.object(ControllerWidget, "run"):
+            _set_run_checked(self.controller, False)
+            self.window._bulk_start_controllers()
+            self.assertTrue(self.controller.tbRun.isChecked())
+
+    def test_bulk_stop_controllers_only(self) -> None:
+        """Stop controllers invokes setChecked(False) on running controllers."""
+        with patch.object(ControllerWidget, "run"):
+            _set_run_checked(self.controller, True)
+            self.window._bulk_stop_controllers()
+            self.assertFalse(self.controller.tbRun.isChecked())
+
+    def test_bulk_clear_all_does_not_touch_controllers(self) -> None:
+        """Clear data iterates only printer/camera/scanner device widgets."""
+        setattr(self.controller, "clear_data", MagicMock())
+        for widget in (self.printer, self.camera, self.scanner):
+            widget.clear_data = MagicMock()
+
+        self.window._bulk_clear_all()
+
+        self.controller.clear_data.assert_not_called()
+        self.printer.clear_data.assert_called_once()
+        self.camera.clear_data.assert_called_once()
+        self.scanner.clear_data.assert_called_once()
 
 
 class TestPrinterProxyClearBuffer(unittest.TestCase):

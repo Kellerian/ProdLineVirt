@@ -1,8 +1,7 @@
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.barcode_scanner.data import ScannerConfig
+from core.controller.data import ControllerConfig
 from core.generator.data import GeneratorConfig
 from core.printing.data import PrinterConfig
 from core.scanning.data import CameraConfig
@@ -15,5 +14,6 @@ class ConfigFile(BaseModel):
     printers: list[PrinterConfig] = Field(default=[])
     cameras: list[CameraConfig] = Field(default=[])
     scanners: list[ScannerConfig] = Field(default=[])
+    controllers: list[ControllerConfig] = Field(default=[])
     transporters: list[TransporterConfig] = Field(default=[])
     generators: list[GeneratorConfig] = Field(default=[])

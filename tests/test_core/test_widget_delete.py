@@ -10,6 +10,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from core.barcode_scanner.scanner_widget import ScannerWidget
+from core.controller.controller_widget import ControllerWidget
 from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.line_emul import MainLineField
 from core.printing.printer_widget import PrinterWidget
@@ -210,6 +211,71 @@ class TestMainLineFieldRemoveApi(unittest.TestCase):
 
         mock_remove.assert_called_once_with(self.generator)
 
+    def test_on_widget_delete_requested_routes_controller(self) -> None:
+        """``delete_requested`` from a controller routes to ``_remove_controller``."""
+        ctl = self.window.add_controller("CTL_X", 5999)
+        with patch.object(self.window, "_remove_controller") as mock_remove:
+            ctl.delete_requested.emit()
+            QApplication.processEvents()
+
+        mock_remove.assert_called_once_with(ctl)
+
+    def test_remove_stopped_controller_from_registry_and_layout(self) -> None:
+        """Stopped controller is removed from ``_controller_widgets`` and layout."""
+        ctl = self.window.add_controller("CTL_RM", 5998)
+        ctl_id = id(ctl)
+        with patch.object(ctl, "run") as mock_run:
+            self.window._remove_controller(ctl)
+
+        self.assertNotIn(ctl_id, self.window._controller_widgets)
+        self.assertFalse(_layout_contains(self.window._devices_layout, ctl))
+        mock_run.assert_called_with(False)
+
+
+class TestControllerExcludedFromTransportModels(unittest.TestCase):
+    """Controllers must not appear in transporter / generator combo models."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        _ensure_qapplication()
+
+    def setUp(self) -> None:
+        self.window = MainLineField()
+        self.printer = PrinterWidget(name="PRN_T", port=9100)
+        self.controller = self.window.add_controller("ONLY_CTL", 5025)
+        self.window._add_device(self.printer)
+        self.transporter = TransporterWidget()
+        self.generator = GeneratorWidget()
+        self.transporter.setup_models(self.window._device_widgets)
+        self.generator.setup_models(self.window._device_widgets)
+
+    def tearDown(self) -> None:
+        self.window.close()
+
+    def test_transporter_combos_exclude_controller(self) -> None:
+        """Neither from nor to lists include the controller (only _device_widgets)."""
+        from_model, to_model = self.transporter.get_data_models()
+        from_names = [
+            from_model.data(from_model.index(r, 0))
+            for r in range(from_model.rowCount())
+        ]
+        to_names = [
+            to_model.data(to_model.index(r, 0))
+            for r in range(to_model.rowCount())
+        ]
+        self.assertIn("PRN_T", from_names)
+        self.assertNotIn("ONLY_CTL", from_names)
+        self.assertNotIn("ONLY_CTL", to_names)
+
+    def test_generator_target_combo_excludes_controller(self) -> None:
+        """Generator destination list never includes the controller."""
+        to_model = self.generator.get_data_models()
+        to_names = [
+            to_model.data(to_model.index(r, 0))
+            for r in range(to_model.rowCount())
+        ]
+        self.assertNotIn("ONLY_CTL", to_names)
+
 
 class TestWidgetDeleteClickedGuards(unittest.TestCase):
     """``_on_delete_clicked`` refuses running widgets and confirms when stopped."""
@@ -331,6 +397,7 @@ class TestClearUiClearsGenerators(unittest.TestCase):
         """Create a main window with one widget of each registry type."""
         self.window = MainLineField()
         self.printer = PrinterWidget(name="PRN_CLR", port=9100)
+        self.controller = self.window.add_controller("CTL_CLR", 5027)
         self.transporter = TransporterWidget()
         self.generator = GeneratorWidget()
         self.window._add_device(self.printer)
@@ -345,15 +412,18 @@ class TestClearUiClearsGenerators(unittest.TestCase):
         """``clear_ui`` empties devices, transporters, and generators."""
         with (
             patch.object(self.printer, "run") as mock_printer_run,
+            patch.object(self.controller, "run") as mock_controller_run,
             patch.object(self.transporter, "run") as mock_transport_run,
             patch.object(self.generator, "run") as mock_generator_run,
         ):
             self.window.clear_ui()
 
         self.assertEqual(self.window._device_widgets, {})
+        self.assertEqual(self.window._controller_widgets, {})
         self.assertEqual(self.window._transporter_widgets, {})
         self.assertEqual(self.window._generator_widgets, {})
         mock_printer_run.assert_called_with(False)
+        mock_controller_run.assert_called_with(False)
         mock_transport_run.assert_called_with(False)
         mock_generator_run.assert_called_with(False)
 

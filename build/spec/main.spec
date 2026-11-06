@@ -18,6 +18,7 @@ from pathlib import Path
 import sys
 
 import qtawesome
+from PyInstaller.utils.hooks import collect_submodules
 
 
 block_cipher = None
@@ -125,6 +126,8 @@ def _pylibdmtx_binary_toc():
     return TOC(items)
 
 
+_PYMODBUS_HIDDENIMPORTS = collect_submodules("pymodbus")
+
 a = Analysis(
     [_MAIN_PY],
     pathex=[],
@@ -142,7 +145,8 @@ a = Analysis(
         'serial.tools.list_ports',
         'qtawesome',
         'qtawesome.iconic_font',
-    ],
+    ]
+    + _PYMODBUS_HIDDENIMPORTS,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

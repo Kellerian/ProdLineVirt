@@ -3,7 +3,7 @@
 | Параметр | Значение |
 |----------|----------|
 | Точка входа | `main.py` |
-| Версия | `client_info.VERSION` (например `1.0.0.1.b0007`) |
+| Версия | `client_info.VERSION` (например `1.0.0.1.b0009`) |
 | Главное окно | `core/main_ui/line_emul.py` → `MainLineField` |
 | UI-форма | `forms/Main.py` → `Ui_MainWindow` |
 | Конфигурация | JSON через `core/main_ui/data.py` → `ConfigFile` |
@@ -12,7 +12,7 @@
 
 ## Назначение
 
-Desktop-приложение на PySide6 для визуальной эмуляции производственной линии маркировки: камеры сканирования, эмулятор ручного сканера ШК (COM), транспортёры, генераторы кодов и принтеры. Виджеты устройств размещаются на холсте (`FlowLayout`), связываются по ID и настраиваются из JSON-конфига.
+Desktop-приложение на PySide6 для визуальной эмуляции производственной линии маркировки: камеры сканирования, эмулятор ручного сканера ШК (COM), **карточки контроллера** (Modbus TCP-сервер `0.0.0.0` + клиент цикла Doypack на `127.0.0.1` того же порта), транспортёры, генераторы кодов и принтеры. Виджеты устройств размещаются на холсте (`FlowLayout`), связываются по ID и настраиваются из JSON-конфига. Контроллеры **не** участвуют в перевозчиках, генераторах и в меню «Очистить данные» — см. [controller.md](controller.md).
 
 ## Архитектура
 
@@ -20,6 +20,10 @@ Desktop-приложение на PySide6 для визуальной эмуля
 flowchart TB
     main["main.py"] --> mlf["MainLineField"]
     mlf --> cam["CameraWidget"]
+    mlf --> ctl["ControllerWidget"]
+    ctl --> crun["ControllerRuntime"]
+    crun --> modbus["ModbusEmulator 0.0.0.0"]
+    crun --> doy["DoypackEmulation 127.0.0.1"]
     mlf --> trn["TransporterWidget"]
     mlf --> gen["GeneratorWidget"]
     mlf --> prn["PrinterWidget"]
@@ -44,6 +48,7 @@ flowchart TB
 | `core/transporting/transporter_widget.py` | Перенос кодов между связанными виджетами (`cbxFrom` → `model_out` источника, `cbxTo` → `model_in` приёмника); источник — камера/принтер/сканер, приёмник — камера/сканер; `CodeScheduler` + per-code FIFO; `tbDelete` / `delete_requested` |
 | `core/generator/generator_widget.py` | Генерация кодов в `model_in` камеры или сканера (`cbxTo`); `CodeScheduler` + `_last_generated_at` (~`spInterval` между генерациями), `create_code_item`; `tbDelete` / `delete_requested` |
 | `core/printing/printer_widget.py` | Буфер принтера (TCP), `cbLanguage` (Legacy/TSPL2/EZPL/ZPL/SAVEMA), `PrinterConfig.language`; `tbDelete` / `delete_requested` |
+| `core/controller/` | Ядро Modbus/Doypack (`ModbusEmulator`, `DoypackEmulation`, `ControllerRuntime`); виджет — `core/controller/controller_widget.py`; отдельный реестр `_controller_widgets` в `MainLineField` — см. [controller.md](controller.md) |
 | `core/barcode_scanner/scanner_core.py` | Эмулятор сканера ШК: очередь кодов, запись в COM (фоновый поток) |
 | `core/barcode_scanner/scanner_proxy.py` | Qt-мост: `Signal scanned`, опрос ядра 250 мс |
 | `libs/serial_port.py` | pyserial: перечисление портов, `SerialPortConfig`, open/write с суффиксом `\r\n` |
@@ -69,10 +74,30 @@ flowchart TB
 | `printers` | `list[PrinterConfig]` | `[]` | принтеры (TCP) |
 | `cameras` | `list[CameraConfig]` | `[]` | камеры сканирования (TCP) |
 | `scanners` | `list[ScannerConfig]` | `[]` | эмуляторы ручного сканера ШК (COM) |
+| `controllers` | `list[ControllerConfig]` | `[]` | Modbus TCP-контроллеры (Doypack); см. [config_controllers.md](config_controllers.md) |
 | `transporters` | `list[TransporterConfig]` | `[]` | перевозчики между виджетами |
 | `generators` | `list[GeneratorConfig]` | `[]` | генераторы кодов |
 
-**Обратная совместимость:** поля со значением по умолчанию `[]` (в том числе `scanners`) могут отсутствовать в старых JSON-файлах — при десериализации подставляется пустой список, ошибки валидации не возникает.
+**Обратная совместимость:** поля со значением по умолчанию `[]` (в том числе `scanners` и `controllers`) могут отсутствовать в старых JSON-файлах — при десериализации подставляется пустой список, ошибки валидации не возникает.
+
+#### Пример одной карточки контроллера в JSON
+
+```json
+{
+    "controllers": [
+        {
+            "name": "CTL_5020",
+            "port": 5020,
+            "queue_size": 10,
+            "mode": "simplex",
+            "controller_type": "delta",
+            "register_addresses": [4146, 4148, 4150]
+        }
+    ]
+}
+```
+
+Подробности полей (в т.ч. **`register_addresses`**: `list[int]` **0…10000**, по умолчанию **`[]`**, обратная совместимость при отсутствии ключа) — [config_controllers.md](config_controllers.md).
 
 ### Модель конфигурации сканера (`ScannerConfig`)
 
@@ -152,6 +177,21 @@ flowchart LR
 Для отладки COM без физического адаптера см. [com0com_setup.md](com0com_setup.md).
 
 Восстановление виджетов при `open_config`, запись в `save_configuration_to_file` и пункт меню «Добавить → Сканер» реализованы в `MainLineField` — см. раздел **«Интеграция сканера в главное окно»** ниже (подзадача **#5**).
+
+## Интеграция контроллера в главное окно
+
+| Элемент | Значение |
+|---------|----------|
+| Меню | «Добавить → Контроллер» (`acAddController`) |
+| Реестр | `_controller_widgets` (отдельно от `_device_widgets`) |
+| Генератор порта | `controller_port_generator`: **5020**, шаг **1**, верхняя граница как у принтера (`< 21100`); имя по умолчанию `CTL_<port>` |
+| Холст | `add_controller` → `FlowLayout` (`scaDevices`), рядом с камерой/принтером/сканером |
+| Сохранение | `save_configuration_to_file` — `controllers=[w.options() for w in _controller_widgets.values()]` |
+| Загрузка | `process_config`: после сканеров — `_load_controllers` → `add_controller` + `load_options`; имена контроллеров **не** попадают в `devices` для перевозчиков/генераторов |
+| Массовое управление | «Запустить/Остановить → Контроллеры»; «Всё»: устройства → **контроллеры** → перевозчики → генераторы; стоп — обратный порядок; **нет** в «Очистить данные» |
+| Удаление | `delete_requested` → `_remove_controller`; `clear_ui` / `closeEvent` — `run(False)` для контроллеров |
+
+Подробности адресов, stop через `ModbusTcpServer.shutdown()` и исключение из combo перевозчика — [controller.md](controller.md).
 
 ## Интеграция сканера в главное окно (#5)
 
@@ -370,7 +410,7 @@ venv/bin/python build_project.py --deb
 # или: venv/bin/python build_deb.py
 ```
 
-Артефакты: `build/deb/dmclineemulator_<debian_ver>_amd64.deb` и копия `build/install/dmcLineEmulator/dmclineemulator_<debian_ver>_amd64.deb` (`client_info.VERSION` `1.0.0.1.b0007` → `1.0.0.1~b0007-1`). Пакет `dmclineemulator`, файлы в `/opt/dmclineemulator/`.
+Артефакты: `build/deb/dmclineemulator_<debian_ver>_amd64.deb` и копия `build/install/dmcLineEmulator/dmclineemulator_<debian_ver>_amd64.deb` (`client_info.VERSION` `1.0.0.1.b0009` → `1.0.0.1~b0009-1`). Пакет `dmclineemulator`, файлы в `/opt/dmclineemulator/`.
 
 Пошаговые предусловия (WSL/Debian, venv, ручной apt), Windows→WSL, установка `dpkg -i`, удаление, Depends/Recommends и риски `pip` на Linux — в [debian_packaging.md](debian_packaging.md).
 
@@ -395,7 +435,7 @@ venv/bin/python build_project.py --deb
 | Имя EXE / COLLECT | `dmcLineEmulator` |
 | `console` | `False` (windowed GUI) |
 | Иконка | `_REPO_ROOT / media / logo.ico` (и в `datas` как `media`) |
-| `hiddenimports` | `serial`, `serial.tools.list_ports` — COM (`libs/serial_port`); `qtawesome`, `qtawesome.iconic_font` — иконки `btnSend` и `tbRefreshPorts` в `ScannerWidget`; также `pylibdmtx`, `psycopg`, `psycopg_c`, `shortuuid` |
+| `hiddenimports` | Базовый список плюс **`collect_submodules("pymodbus")`** (framer, datastore, client/server — иначе frozen exe падает при старте карточки контроллера); `serial`, `serial.tools.list_ports` — COM (`libs/serial_port`); `qtawesome`, `qtawesome.iconic_font` — иконки `btnSend` и `tbRefreshPorts` в `ScannerWidget`; также `pylibdmtx`, `psycopg`, `psycopg_c`, `shortuuid` |
 | `datas` | Шрифты QtAwesome (`qtawesome/fonts`) — без них иконки в frozen-сборке не отображаются |
 | Native libdmtx | TOC BINARY из `pylibdmtx.EXTERNAL_DEPENDENCIES` (см. ниже) |
 
@@ -415,10 +455,12 @@ PyInstaller не всегда подхватывает подмодули `seria
 
 ### Версия приложения
 
-Номер сборки — `client_info.VERSION` в корне репозитория. Текущая версия: `1.0.0.1.b0007` (сборка `.deb` для Debian/Ubuntu); ранее `1.0.0.1.b0006` (восстановление cross-widget DnD), `1.0.0.1.b0005` (удаление виджетов + COM refresh), `1.0.0.1.b0004` (Remove API), `1.0.0.1.b0003` (`tbDelete` / `delete_requested`), `1.0.0.1.b0002` (fix-qt-light-theme), `1.0.0.1.b0001` (релиз с эмулятором сканера ШК). Последний разряд увеличивается по соглашениям версионирования проекта.
+Номер сборки — `client_info.VERSION` в корне репозитория. Текущая версия: `1.0.0.1.b0009`; ранее `1.0.0.1.b0008` (джиттер координат камеры), `1.0.0.1.b0007` (сборка `.deb` для Debian/Ubuntu), `1.0.0.1.b0006` (восстановление cross-widget DnD), `1.0.0.1.b0005` (удаление виджетов + COM refresh), `1.0.0.1.b0004` (Remove API), `1.0.0.1.b0003` (`tbDelete` / `delete_requested`), `1.0.0.1.b0002` (fix-qt-light-theme), `1.0.0.1.b0001` (релиз с эмулятором сканера ШК). Последний разряд увеличивается по соглашениям версионирования проекта.
 
 ## Связанная документация
 
+- [controller_core.md](controller_core.md) — ядро Modbus/Doypack: `core/controller/` (`ModbusEmulator`, `DoypackEmulation`, `get_modbus`, логгер `CTL`).
+- [controller.md](controller.md) — карточка на холсте: отдельный asyncio-поток, отсутствие в перевозчиках / генераторах / «Очистить данные», сборка `hiddenimports` pymodbus.
 - [model_processing_timing.md](model_processing_timing.md) — метки времени, FIFO-готовность, API хелперов, точки входа pipeline (#1, #3 плана per-code interval).
 - [code_scheduler.md](code_scheduler.md) — `CodeScheduler`, тик 10 мс, API `start`/`stop`; интеграция в `CameraWidget` (#4), `TransporterWidget` (#5) и `GeneratorWidget` (#6).
 - Раздел «Связь виджетов: Transport и Generator» выше — `ScannerWidget` в combo, wiring `model_in`/`model_out`, null guards (подзадача #6 плана serial barcode scanner).

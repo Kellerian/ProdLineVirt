@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.11.0
+## Created by: Qt User Interface Compiler version 6.7.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -107,6 +107,8 @@ class Ui_MainWindow(object):
         self.acAddPrinter.setObjectName(u"acAddPrinter")
         self.acAddScanner = QAction(MainWindow)
         self.acAddScanner.setObjectName(u"acAddScanner")
+        self.acAddController = QAction(MainWindow)
+        self.acAddController.setObjectName(u"acAddController")
         self.acAddTransporter = QAction(MainWindow)
         self.acAddTransporter.setObjectName(u"acAddTransporter")
         self.acOpen = QAction(MainWindow)
@@ -127,6 +129,8 @@ class Ui_MainWindow(object):
         self.acControlStartCameras.setObjectName(u"acControlStartCameras")
         self.acControlStartScanners = QAction(MainWindow)
         self.acControlStartScanners.setObjectName(u"acControlStartScanners")
+        self.acControlStartControllers = QAction(MainWindow)
+        self.acControlStartControllers.setObjectName(u"acControlStartControllers")
         self.acControlStartTransporters = QAction(MainWindow)
         self.acControlStartTransporters.setObjectName(u"acControlStartTransporters")
         self.acControlStartGenerators = QAction(MainWindow)
@@ -139,6 +143,8 @@ class Ui_MainWindow(object):
         self.acControlStopCameras.setObjectName(u"acControlStopCameras")
         self.acControlStopScanners = QAction(MainWindow)
         self.acControlStopScanners.setObjectName(u"acControlStopScanners")
+        self.acControlStopControllers = QAction(MainWindow)
+        self.acControlStopControllers.setObjectName(u"acControlStopControllers")
         self.acControlStopTransporters = QAction(MainWindow)
         self.acControlStopTransporters.setObjectName(u"acControlStopTransporters")
         self.acControlStopGenerators = QAction(MainWindow)
@@ -223,6 +229,7 @@ class Ui_MainWindow(object):
         self.menu.addAction(self.acAddCamera)
         self.menu.addAction(self.acAddPrinter)
         self.menu.addAction(self.acAddScanner)
+        self.menu.addAction(self.acAddController)
         self.menu.addSeparator()
         self.menu.addAction(self.acAddTransporter)
         self.menu.addSeparator()
@@ -239,6 +246,7 @@ class Ui_MainWindow(object):
         self.menuControlStart.addAction(self.acControlStartPrinters)
         self.menuControlStart.addAction(self.acControlStartCameras)
         self.menuControlStart.addAction(self.acControlStartScanners)
+        self.menuControlStart.addAction(self.acControlStartControllers)
         self.menuControlStart.addSeparator()
         self.menuControlStart.addAction(self.acControlStartTransporters)
         self.menuControlStart.addAction(self.acControlStartGenerators)
@@ -246,6 +254,7 @@ class Ui_MainWindow(object):
         self.menuControlStop.addAction(self.acControlStopPrinters)
         self.menuControlStop.addAction(self.acControlStopCameras)
         self.menuControlStop.addAction(self.acControlStopScanners)
+        self.menuControlStop.addAction(self.acControlStopControllers)
         self.menuControlStop.addSeparator()
         self.menuControlStop.addAction(self.acControlStopTransporters)
         self.menuControlStop.addAction(self.acControlStopGenerators)
@@ -264,6 +273,7 @@ class Ui_MainWindow(object):
         self.acAddCamera.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u043c\u0435\u0440\u0430", None))
         self.acAddPrinter.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0440\u0438\u043d\u0442\u0435\u0440", None))
         self.acAddScanner.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043a\u0430\u043d\u0435\u0440", None))
+        self.acAddController.setText(QCoreApplication.translate("MainWindow", u"\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u043b\u0435\u0440", None))
         self.acAddTransporter.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0435\u0440\u0435\u0432\u043e\u0437\u0447\u0438\u043a", None))
         self.acOpen.setText(QCoreApplication.translate("MainWindow", u"\u041e\u0442\u043a\u0440\u044b\u0442\u044c...", None))
         self.acSaveAs.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043a\u0430\u043a...", None))
@@ -274,12 +284,14 @@ class Ui_MainWindow(object):
         self.acControlStartPrinters.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0440\u0438\u043d\u0442\u0435\u0440\u044b", None))
         self.acControlStartCameras.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u043c\u0435\u0440\u044b", None))
         self.acControlStartScanners.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043a\u0430\u043d\u0435\u0440\u044b", None))
+        self.acControlStartControllers.setText(QCoreApplication.translate("MainWindow", u"\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u043b\u0435\u0440\u044b", None))
         self.acControlStartTransporters.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0435\u0440\u0435\u0432\u043e\u0437\u0447\u0438\u043a\u0438", None))
         self.acControlStartGenerators.setText(QCoreApplication.translate("MainWindow", u"\u0413\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440\u044b", None))
         self.acControlStopAll.setText(QCoreApplication.translate("MainWindow", u"\u0412\u0441\u0451", None))
         self.acControlStopPrinters.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0440\u0438\u043d\u0442\u0435\u0440\u044b", None))
         self.acControlStopCameras.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u043c\u0435\u0440\u044b", None))
         self.acControlStopScanners.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043a\u0430\u043d\u0435\u0440\u044b", None))
+        self.acControlStopControllers.setText(QCoreApplication.translate("MainWindow", u"\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u043b\u0435\u0440\u044b", None))
         self.acControlStopTransporters.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0435\u0440\u0435\u0432\u043e\u0437\u0447\u0438\u043a\u0438", None))
         self.acControlStopGenerators.setText(QCoreApplication.translate("MainWindow", u"\u0413\u0435\u043d\u0435\u0440\u0430\u0442\u043e\u0440\u044b", None))
         self.acControlClearAll.setText(QCoreApplication.translate("MainWindow", u"\u0412\u0441\u0451", None))

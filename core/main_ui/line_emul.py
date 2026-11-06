@@ -5,6 +5,8 @@ from PySide6.QtWidgets import QFileDialog, QMainWindow, QWidget
 
 from core.barcode_scanner.data import ScannerConfig
 from core.barcode_scanner.scanner_widget import ScannerWidget
+from core.controller.controller_widget import ControllerWidget
+from core.controller.data import ControllerConfig, ControllerMode, ControllerType
 from core.generator.data import GeneratorConfig
 from core.generator.generator_widget import GeneratorWidget
 from core.main_ui.data import ConfigFile
@@ -30,8 +32,10 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         ] = {}
         self._transporter_widgets: dict[int, TransporterWidget] = {}
         self._generator_widgets: dict[int, GeneratorWidget] = {}
+        self._controller_widgets: dict[int, ControllerWidget] = {}
         self.cam_port = self.cam_port_generator()
         self.printer_port = self.printer_port_generator()
+        self.controller_port = self.controller_port_generator()
         self.scanner_name = self.scanner_name_generator()
         self._devices_layout = FlowLayout(self.scaDevices)
         self.scaDevices.setLayout(self._devices_layout)
@@ -57,6 +61,13 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         while printer_port < 21100:
             yield printer_port
             printer_port += 1
+
+    @staticmethod
+    def controller_port_generator() -> Iterator[int]:
+        controller_port = 5020
+        while controller_port < 21100:
+            yield controller_port
+            controller_port += 1
 
     @staticmethod
     def scanner_name_generator(start: int = 1) -> Iterator[str]:
@@ -88,6 +99,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.acAddPrinter.triggered.connect(self._ac_add_printer)
         self.acAddCamera.triggered.connect(self._ac_add_camera)
         self.acAddScanner.triggered.connect(self._ac_add_scanner)
+        self.acAddController.triggered.connect(self._ac_add_controller)
         self.acAddTransporter.triggered.connect(self.add_transporter)
         self.acAddGenerator.triggered.connect(self.add_generator)
         self.acOpen.triggered.connect(self.open_config)
@@ -102,6 +114,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.acControlStartPrinters.triggered.connect(self._bulk_start_printers)
         self.acControlStartCameras.triggered.connect(self._bulk_start_cameras)
         self.acControlStartScanners.triggered.connect(self._bulk_start_scanners)
+        self.acControlStartControllers.triggered.connect(
+            self._bulk_start_controllers
+        )
         self.acControlStartTransporters.triggered.connect(
             self._bulk_start_transporters
         )
@@ -112,6 +127,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self.acControlStopPrinters.triggered.connect(self._bulk_stop_printers)
         self.acControlStopCameras.triggered.connect(self._bulk_stop_cameras)
         self.acControlStopScanners.triggered.connect(self._bulk_stop_scanners)
+        self.acControlStopControllers.triggered.connect(
+            self._bulk_stop_controllers
+        )
         self.acControlStopTransporters.triggered.connect(
             self._bulk_stop_transporters
         )
@@ -140,6 +158,10 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         for dev in self._device_widgets.values():
             if isinstance(dev, ScannerWidget):
                 yield dev
+
+    def _iter_controllers(self) -> Iterator[ControllerWidget]:
+        """Yield controller widgets in registry order."""
+        yield from self._controller_widgets.values()
 
     def _iter_devices(
         self,
@@ -180,8 +202,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             widget.clear_data()
 
     def _bulk_start_all(self) -> None:
-        """Start devices, then transporters, then generators."""
+        """Start devices, then controllers, then transporters, then generators."""
         self._start_widgets(self._iter_devices())
+        self._start_widgets(self._iter_controllers())
         self._start_widgets(self._iter_transporters())
         self._start_widgets(self._iter_generators())
 
@@ -194,6 +217,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
     def _bulk_start_scanners(self) -> None:
         self._start_widgets(self._iter_scanners())
 
+    def _bulk_start_controllers(self) -> None:
+        self._start_widgets(self._iter_controllers())
+
     def _bulk_start_transporters(self) -> None:
         self._start_widgets(self._iter_transporters())
 
@@ -201,9 +227,10 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._start_widgets(self._iter_generators())
 
     def _bulk_stop_all(self) -> None:
-        """Stop generators, then transporters, then devices."""
+        """Stop generators, then transporters, then controllers, then devices."""
         self._stop_widgets(reversed(list(self._iter_generators())))
         self._stop_widgets(reversed(list(self._iter_transporters())))
+        self._stop_widgets(reversed(list(self._iter_controllers())))
         self._stop_widgets(reversed(list(self._iter_devices())))
 
     def _bulk_stop_printers(self) -> None:
@@ -214,6 +241,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
 
     def _bulk_stop_scanners(self) -> None:
         self._stop_widgets(self._iter_scanners())
+
+    def _bulk_stop_controllers(self) -> None:
+        self._stop_widgets(self._iter_controllers())
 
     def _bulk_stop_transporters(self) -> None:
         self._stop_widgets(self._iter_transporters())
@@ -323,6 +353,9 @@ class MainLineField(QMainWindow, Ui_MainWindow):
                 dev.options() for dev in self._device_widgets.values()
                 if isinstance(dev, ScannerWidget)
             ],
+            controllers=[
+                dev.options() for dev in self._controller_widgets.values()
+            ],
             transporters=[
                 dev.options() for dev in self._transporter_widgets.values()
             ],
@@ -361,6 +394,18 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             devices[scn_w.name] = id(scn_w)
         self._sync_scanner_name_generator()
 
+    def _load_controllers(self, controllers: list[ControllerConfig]) -> None:
+        """Recreate controller widgets from saved configuration."""
+        for ctl in controllers:
+            ctl_w = self.add_controller(
+                ctl.name,
+                ctl.port,
+                ctl.queue_size,
+                ctl.mode,
+                ctl.controller_type,
+            )
+            ctl_w.load_options(ctl)
+
     def _load_transporters(
         self, transporters:  list[TransporterConfig], devices: dict[str, int]
     ):
@@ -391,6 +436,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         self._load_printers(config.printers, devices)
         self._load_cameras(config.cameras, devices)
         self._load_scanners(config.scanners, devices)
+        self._load_controllers(config.controllers)
         self._load_transporters(config.transporters, devices)
         self._load_generator(config.generators, devices)
 
@@ -401,6 +447,11 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             dev.setParent(None)
             dev.run(False)
             dev.deleteLater()
+        for key in self._controller_widgets.copy():
+            ctl = self._controller_widgets.pop(key)
+            ctl.setParent(None)
+            ctl.run(False)
+            ctl.deleteLater()
         for key in self._transporter_widgets.copy():
             trn = self._transporter_widgets.pop(key)
             trn.setParent(None)
@@ -412,6 +463,44 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             gen.run(False)
             gen.deleteLater()
         self._sync_scanner_name_generator()
+
+    def _ac_add_controller(self) -> None:
+        """Add a controller card with the next default port/name."""
+        port = next(self.controller_port)
+        name = f"CTL_{port}"
+        self.add_controller(name, port)
+
+    def add_controller(
+        self,
+        name: str,
+        port: int,
+        queue_size: int = 10,
+        mode: ControllerMode = ControllerMode.simplex,
+        controller_type: ControllerType = ControllerType.delta,
+    ) -> ControllerWidget:
+        """Place a controller widget on the device canvas.
+
+        Controllers use a separate registry from ``_device_widgets`` so
+        transporters and generators do not list them in combo boxes.
+
+        Args:
+            name: Display name.
+            port: TCP listen port (``0.0.0.0`` in the runtime).
+            queue_size: Doypack queue length.
+            mode: Simplex or duplex.
+            controller_type: Delta or Xinje register map.
+
+        Returns:
+            The created ``ControllerWidget`` instance.
+        """
+        ctl_w = ControllerWidget(
+            name, port, queue_size, mode, controller_type
+        )
+        key = id(ctl_w)
+        self._controller_widgets[key] = ctl_w
+        self._devices_layout.addWidget(ctl_w)
+        ctl_w.delete_requested.connect(self._on_widget_delete_requested)
+        return ctl_w
 
     def open_config(self):
         file_data = QFileDialog.getOpenFileName(
@@ -459,10 +548,26 @@ class MainLineField(QMainWindow, Ui_MainWindow):
         widget = self.sender()
         if isinstance(widget, (CameraWidget, PrinterWidget, ScannerWidget)):
             self._remove_device(widget)
+        elif isinstance(widget, ControllerWidget):
+            self._remove_controller(widget)
         elif isinstance(widget, TransporterWidget):
             self._remove_transporter(widget)
         elif isinstance(widget, GeneratorWidget):
             self._remove_generator(widget)
+
+    def _remove_controller(self, controller: ControllerWidget) -> None:
+        """Remove a controller from the registry and canvas.
+
+        Args:
+            controller: Controller widget that requested deletion.
+        """
+        key = id(controller)
+        if key not in self._controller_widgets:
+            return
+        self._controller_widgets.pop(key)
+        controller.setParent(None)
+        controller.run(False)
+        controller.deleteLater()
 
     def _remove_device(
         self, device: CameraWidget | PrinterWidget | ScannerWidget
@@ -519,5 +624,7 @@ class MainLineField(QMainWindow, Ui_MainWindow):
             twd.run(False)
         for gwd in self._generator_widgets.values():
             gwd.run(False)
+        for cwd in self._controller_widgets.values():
+            cwd.run(False)
         for dwd in self._device_widgets.values():
             dwd.run(False)

@@ -226,6 +226,7 @@ QMenu::item:selected {
     <addaction name="acAddCamera"/>
     <addaction name="acAddPrinter"/>
     <addaction name="acAddScanner"/>
+    <addaction name="acAddController"/>
     <addaction name="separator"/>
     <addaction name="acAddTransporter"/>
     <addaction name="separator"/>
@@ -253,6 +254,7 @@ QMenu::item:selected {
      <addaction name="acControlStartPrinters"/>
      <addaction name="acControlStartCameras"/>
      <addaction name="acControlStartScanners"/>
+     <addaction name="acControlStartControllers"/>
      <addaction name="separator"/>
      <addaction name="acControlStartTransporters"/>
      <addaction name="acControlStartGenerators"/>
@@ -265,6 +267,7 @@ QMenu::item:selected {
      <addaction name="acControlStopPrinters"/>
      <addaction name="acControlStopCameras"/>
      <addaction name="acControlStopScanners"/>
+     <addaction name="acControlStopControllers"/>
      <addaction name="separator"/>
      <addaction name="acControlStopTransporters"/>
      <addaction name="acControlStopGenerators"/>
@@ -299,6 +302,11 @@ QMenu::item:selected {
   <action name="acAddScanner">
    <property name="text">
     <string>Сканер</string>
+   </property>
+  </action>
+  <action name="acAddController">
+   <property name="text">
+    <string>Контроллер</string>
    </property>
   </action>
   <action name="acAddTransporter">
@@ -351,6 +359,11 @@ QMenu::item:selected {
     <string>Сканеры</string>
    </property>
   </action>
+  <action name="acControlStartControllers">
+   <property name="text">
+    <string>Контроллеры</string>
+   </property>
+  </action>
   <action name="acControlStartTransporters">
    <property name="text">
     <string>Перевозчики</string>
@@ -379,6 +392,11 @@ QMenu::item:selected {
   <action name="acControlStopScanners">
    <property name="text">
     <string>Сканеры</string>
+   </property>
+  </action>
+  <action name="acControlStopControllers">
+   <property name="text">
+    <string>Контроллеры</string>
    </property>
   </action>
   <action name="acControlStopTransporters">

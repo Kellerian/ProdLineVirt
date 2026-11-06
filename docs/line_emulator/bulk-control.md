@@ -22,11 +22,12 @@
 │   ├── Принтеры
 │   ├── Камеры
 │   ├── Сканеры
+│   ├── Контроллеры
 │   ├── ─────────
 │   ├── Перевозчики
 │   └── Генераторы
 ├── Остановить
-│   └── (те же пункты)
+│   └── (те же пункты, включая Контроллеры)
 └── Очистить данные
     ├── Всё
     ├── Принтеры
@@ -46,11 +47,13 @@
 
 | Действие | Условие | Механизм | Затронутые типы |
 |----------|---------|----------|-----------------|
-| **Запустить** | `tbRun.isChecked() == False` | `tbRun.setChecked(True)` → срабатывает `run(True)` виджета | Принтеры, камеры, сканеры, перевозчики, генераторы |
-| **Остановить** | `tbRun.isChecked() == True` | `tbRun.setChecked(False)` → `run(False)` | Те же пять типов |
+| **Запустить** | `tbRun.isChecked() == False` | `tbRun.setChecked(True)` → срабатывает `run(True)` виджета | Принтеры, камеры, сканеры, **контроллеры**, перевозчики, генераторы |
+| **Остановить** | `tbRun.isChecked() == True` | `tbRun.setChecked(False)` → `run(False)` | Те же шесть типов (устройства + контроллеры + перевозчики + генераторы) |
 | **Очистить данные** | всегда для выбранной группы | `widget.clear_data()` | Только устройства с очередями: принтер, камера, сканер |
 
 Уже запущенные виджеты при массовом **Запустить** пропускаются; уже остановленные — при **Остановить**. Очистка **не** меняет состояние `tbRun` и не вызывает `run(False)`.
+
+Контроллеры Modbus/Doypack **не** имеют пункта «Очистить данные» (нет очередей кодов в UI).
 
 Перевозчики и генераторы **не** имеют пункта «Очистить данные»: у них нет пользовательских очередей кодов в UI; сброс выполняется только на устройствах-источниках/приёмниках.
 
@@ -62,13 +65,15 @@
 
 ```mermaid
 flowchart LR
-    D["Устройства\nпринтеры → камеры → сканеры"] --> T["Перевозчики"]
+    D["Устройства\nпринтеры → камеры → сканеры"] --> C["Контроллеры"]
+    C --> T["Перевозчики"]
     T --> G["Генераторы"]
 ```
 
 1. `_iter_devices()` — принтеры, затем камеры, затем сканеры (порядок в `_device_widgets`).
-2. `_iter_transporters()` — все `TransporterWidget`.
-3. `_iter_generators()` — все `GeneratorWidget`.
+2. `_iter_controllers()` — все `ControllerWidget` на холсте (отдельный реестр `_controller_widgets`).
+3. `_iter_transporters()` — все `TransporterWidget`.
+4. `_iter_generators()` — все `GeneratorWidget`.
 
 ### Остановка (`_bulk_stop_all`)
 
@@ -77,12 +82,14 @@ flowchart LR
 ```mermaid
 flowchart LR
     G["Генераторы"] --> T["Перевозчики"]
-    T --> D["Устройства\nсканеры → камеры → принтеры"]
+    T --> C["Контроллеры"]
+    C --> D["Устройства\nсканеры → камеры → принтеры"]
 ```
 
 1. Генераторы (`reversed(list(_iter_generators()))`).
 2. Перевозчики (`reversed(list(_iter_transporters()))`).
-3. Устройства (`reversed(list(_iter_devices()))`).
+3. Контроллеры (`reversed(list(_iter_controllers()))`).
+4. Устройства (`reversed(list(_iter_devices()))`).
 
 Порядок подтверждён unit-тестами `test_bulk_start_all_order` и `test_bulk_stop_all_reverse_order` в `tests/test_core/test_bulk_control.py`.
 
@@ -98,6 +105,7 @@ flowchart LR
 | `_iter_cameras()` | `_device_widgets` | то же |
 | `_iter_scanners()` | `_device_widgets` | то же |
 | `_iter_devices()` | композиция | принтеры → камеры → сканеры |
+| `_iter_controllers()` | `_controller_widgets` | порядок dict |
 | `_iter_transporters()` | `_transporter_widgets` | порядок dict |
 | `_iter_generators()` | `_generator_widgets` | порядок dict |
 
