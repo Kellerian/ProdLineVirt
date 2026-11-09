@@ -24,14 +24,14 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(260, 280)
+        Form.resize(280, 402)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(Form.sizePolicy().hasHeightForWidth())
         Form.setSizePolicy(sizePolicy)
-        Form.setMinimumSize(QSize(260, 280))
-        Form.setMaximumSize(QSize(260, 16777215))
+        Form.setMinimumSize(QSize(280, 250))
+        Form.setMaximumSize(QSize(280, 16777215))
         Form.setStyleSheet(u"QToolButton {\n"
 "    qproperty-alignment: AlignCenter;\n"
 "	border: 1px solid #FF17365D;\n"
@@ -368,7 +368,12 @@ class Ui_Form(object):
         __qtablewidgetitem1 = QTableWidgetItem()
         self.tblRegisters.setHorizontalHeaderItem(1, __qtablewidgetitem1)
         self.tblRegisters.setObjectName(u"tblRegisters")
-        self.tblRegisters.setMinimumSize(QSize(0, 120))
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.tblRegisters.sizePolicy().hasHeightForWidth())
+        self.tblRegisters.setSizePolicy(sizePolicy3)
+        self.tblRegisters.setMinimumSize(QSize(0, 240))
         self.tblRegisters.setAlternatingRowColors(True)
         self.tblRegisters.setShowGrid(True)
         self.tblRegisters.setWordWrap(False)
