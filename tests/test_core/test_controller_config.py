@@ -7,6 +7,7 @@ import unittest
 
 from pydantic import ValidationError
 
+from core.controller.addresses import ParsedRegister, normalize_register_token, parse_register_token
 from core.controller.data import ControllerConfig, ControllerMode, ControllerType
 from core.main_ui.data import ConfigFile
 
@@ -76,16 +77,62 @@ class TestControllerConfig(unittest.TestCase):
                         },
                     )
 
-    def test_register_addresses_string_element_raises(self) -> None:
-        """String digits are not coerced to int in register_addresses."""
-        with self.assertRaises(ValidationError):
-            ControllerConfig.model_validate(
-                {
-                    "name": "CTL_1",
-                    "port": 5020,
-                    "register_addresses": ["4146"],
-                },
-            )
+    def test_register_addresses_string_element_valid(self) -> None:
+        """String tokens are accepted and preserved in register_addresses."""
+        cfg = ControllerConfig.model_validate(
+            {
+                "name": "CTL_1",
+                "port": 5020,
+                "register_addresses": ["4146", "D100"],
+            },
+        )
+        self.assertEqual(cfg.register_addresses, ["4146", "D100"])
+
+    def test_register_addresses_invalid_string_element_raises(self) -> None:
+        """Out-of-range or malformed string tokens raise ValidationError."""
+        for bad in ("10001", "abc"):
+            with self.subTest(token=bad):
+                with self.assertRaises(ValidationError):
+                    ControllerConfig.model_validate(
+                        {
+                            "name": "CTL_1",
+                            "port": 5020,
+                            "register_addresses": [bad],
+                        },
+                    )
+
+    def test_register_addresses_string_round_trip(self) -> None:
+        """JSON round-trip keeps string register tokens."""
+        addresses = ["D100", "m100", "2801", "4146"]
+        original = ControllerConfig(
+            name="CTL_1",
+            port=5020,
+            register_addresses=addresses,
+        )
+        restored = ControllerConfig.model_validate_json(original.model_dump_json())
+        self.assertEqual(restored.register_addresses, addresses)
+
+    def test_register_addresses_mixed_round_trip(self) -> None:
+        """Mixed int and str list survives model_dump_json → model_validate_json."""
+        addresses: list[str | int] = [4146, "D100"]
+        original = ControllerConfig(
+            name="CTL_1",
+            port=5020,
+            register_addresses=addresses,
+        )
+        restored = ControllerConfig.model_validate_json(original.model_dump_json())
+        self.assertEqual(restored.register_addresses, addresses)
+
+    def test_register_addresses_int_coil_band_stays_int(self) -> None:
+        """Legacy int in coil band (2801) remains int after validation."""
+        cfg = ControllerConfig.model_validate(
+            {
+                "name": "CTL_1",
+                "port": 5020,
+                "register_addresses": [2801],
+            },
+        )
+        self.assertEqual(cfg.register_addresses, [2801])
 
     def test_register_addresses_float_element_raises(self) -> None:
         """Non-int elements (e.g. float) raise ValidationError under strict."""
@@ -211,6 +258,105 @@ class TestControllerConfig(unittest.TestCase):
                     "controller_type": ["delta"],
                 },
             )
+
+
+class TestParseRegisterToken(unittest.TestCase):
+    """Vectors for parse_register_token kind, address, and token."""
+
+    def test_holding_d_prefix(self) -> None:
+        """D/d prefix maps to holding at 4096 + N."""
+        cases = [
+            ("D100", "holding", 4196, "D100"),
+            ("d0", "holding", 4096, "d0"),
+            ("D0100", "holding", 4196, "D0100"),
+            ("D5904", "holding", 10_000, "D5904"),
+        ]
+        for raw, kind, address, token in cases:
+            with self.subTest(raw=raw):
+                parsed = parse_register_token(raw)
+                self.assertEqual(parsed, ParsedRegister(kind=kind, address=address, token=token))
+
+    def test_coil_m_prefix(self) -> None:
+        """M/m prefix maps to coil at 2048 + N."""
+        cases = [
+            ("M100", "coil", 2148, "M100"),
+            ("m100", "coil", 2148, "m100"),
+            ("M0", "coil", 2048, "M0"),
+            ("M2952", "coil", 5000, "M2952"),
+        ]
+        for raw, kind, address, token in cases:
+            with self.subTest(raw=raw):
+                parsed = parse_register_token(raw)
+                self.assertEqual(parsed, ParsedRegister(kind=kind, address=address, token=token))
+
+    def test_bare_decimal_coil_band(self) -> None:
+        """Bare numbers 2048…4095 are coils at the same address."""
+        for address in (2801, 2567, 2048, 4095):
+            with self.subTest(address=address):
+                parsed = parse_register_token(str(address))
+                self.assertEqual(
+                    parsed,
+                    ParsedRegister(kind="coil", address=address, token=str(address)),
+                )
+
+    def test_bare_decimal_holding(self) -> None:
+        """Bare numbers outside coil band are holding at the same address."""
+        cases = [4146, 0, 2047, 4096, 5000, 5001, 11, 20, 10_000]
+        for address in cases:
+            with self.subTest(address=address):
+                parsed = parse_register_token(str(address))
+                self.assertEqual(
+                    parsed,
+                    ParsedRegister(kind="holding", address=address, token=str(address)),
+                )
+
+    def test_strip_preserves_inner_token(self) -> None:
+        """Whitespace is stripped; token has no outer spaces."""
+        parsed = parse_register_token("  D100  ")
+        self.assertEqual(parsed.token, "D100")
+        self.assertEqual(parsed.address, 4196)
+
+    def test_invalid_tokens_raise(self) -> None:
+        """Malformed or out-of-range tokens raise ValueError."""
+        invalid = [
+            "D5905",
+            "M2953",
+            "10001",
+            "-1",
+            "abc",
+            "X100",
+            "D",
+            "M",
+            "D100a",
+            "D 100",
+            "+4146",
+            "",
+            "   ",
+        ]
+        for raw in invalid:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ValueError):
+                    parse_register_token(raw)
+
+
+class TestNormalizeRegisterToken(unittest.TestCase):
+    """Tests for normalize_register_token JSON element handling."""
+
+    def test_int_legacy_preserved(self) -> None:
+        """Valid legacy ints are returned unchanged."""
+        self.assertEqual(normalize_register_token(4146), 4146)
+        self.assertEqual(normalize_register_token(2801), 2801)
+
+    def test_str_returns_token(self) -> None:
+        """String input returns stripped parsed token."""
+        self.assertEqual(normalize_register_token("D100"), "D100")
+
+    def test_rejected_types_raise(self) -> None:
+        """bool, float, and similar types are rejected."""
+        for bad in (True, False, 4146.0):
+            with self.subTest(value=bad):
+                with self.assertRaises(ValueError):
+                    normalize_register_token(bad)
 
 
 class TestConfigFileControllers(unittest.TestCase):

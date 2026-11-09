@@ -97,7 +97,7 @@ flowchart TB
 }
 ```
 
-Подробности полей (в т.ч. **`register_addresses`**: `list[int]` **0…10000**, по умолчанию **`[]`**, обратная совместимость при отсутствии ключа) — [config_controllers.md](config_controllers.md).
+Подробности полей (в т.ч. **`register_addresses`**: `list[str | int]`, по умолчанию **`[]`**, допустимы и legacy-числа, и строки вроде `"D100"` / `"2801"`; правила разбора holding/coil — [config_controllers.md](config_controllers.md)).
 
 ### Модель конфигурации сканера (`ScannerConfig`)
 

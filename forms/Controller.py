@@ -420,7 +420,7 @@ class Ui_Form(object):
         ___qtablewidgetitem1 = self.tblRegisters.horizontalHeaderItem(1)
         ___qtablewidgetitem1.setText(QCoreApplication.translate("Form", u"\u0417\u043d\u0430\u0447\u0435\u043d\u0438\u0435", None));
 #if QT_CONFIG(tooltip)
-        self.tblRegisters.setToolTip(QCoreApplication.translate("Form", u"\u0410\u0434\u0440\u0435\u0441\u0430 holding 0\u202610000. \u041e\u0447\u0435\u0440\u0435\u0434\u044c Delta: \u0441 4146, \u0448\u0430\u0433 2 \u043f\u0440\u0438 Duplex (1 \u043f\u0440\u0438 Simplex). Xinje: \u0441 20.", None))
+        self.tblRegisters.setToolTip(QCoreApplication.translate("Form", u"D/d \u2014 holding 4096+N, M/m \u2014 coil 2048+N; \u0447\u0438\u0441\u043b\u043e 2048\u20264095 \u2014 coil, \u0438\u043d\u0430\u0447\u0435 holding 0\u202610000; coil datastore 0\u20265000. \u041e\u0447\u0435\u0440\u0435\u0434\u044c Delta \u0441 4146, Xinje \u0441 20.", None))
 #endif // QT_CONFIG(tooltip)
     # retranslateUi
 

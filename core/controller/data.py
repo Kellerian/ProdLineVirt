@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from core.controller.addresses import normalize_register_token
 
 
 class ControllerMode(str, Enum):
@@ -22,9 +22,6 @@ class ControllerType(str, Enum):
     xinje = "xinje"
 
 
-RegisterAddress = Annotated[int, Field(ge=0, le=10_000)]
-
-
 class ControllerConfig(BaseModel):
     """Configuration for a Modbus TCP controller (Doypack) device on the line canvas."""
 
@@ -35,7 +32,18 @@ class ControllerConfig(BaseModel):
     queue_size: int = Field(default=10, ge=1, le=1000)
     mode: ControllerMode = ControllerMode.simplex
     controller_type: ControllerType = ControllerType.delta
-    register_addresses: list[RegisterAddress] = Field(default_factory=list)
+    register_addresses: list[str | int] = Field(default_factory=list)
+
+    @field_validator("register_addresses", mode="before")
+    @classmethod
+    def _normalize_register_addresses(cls, value: object) -> object:
+        """Normalize list elements to ``str`` tokens or legacy ``int`` addresses."""
+        if value is None:
+            msg = "register_addresses must be a list, got None"
+            raise ValueError(msg)
+        if not isinstance(value, list):
+            return value
+        return [normalize_register_token(item) for item in value]
 
     @field_validator("mode", mode="before")
     @classmethod

@@ -548,7 +548,7 @@ QWidget#Form {
       </size>
      </property>
      <property name="toolTip">
-      <string>Адреса holding 0…10000. Очередь Delta: с 4146, шаг 2 при Duplex (1 при Simplex). Xinje: с 20.</string>
+      <string>D/d — holding 4096+N, M/m — coil 2048+N; число 2048…4095 — coil, иначе holding 0…10000; coil datastore 0…5000. Очередь Delta с 4146, Xinje с 20.</string>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>

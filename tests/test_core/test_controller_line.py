@@ -89,7 +89,7 @@ class TestControllerLineIntegration(unittest.TestCase):
             assert isinstance(w, ControllerWidget)
             expected = loaded.controllers[0]
             self.assertEqual(w.options().model_dump(), expected.model_dump())
-            self.assertEqual(expected.register_addresses, [4146, 4150])
+            self.assertEqual(expected.register_addresses, ["4146", "4150"])
             self.assertEqual(w.tblRegisters.rowCount(), 2)
             self.assertEqual(w.tblRegisters.item(0, 0).text(), "4146")
             self.assertEqual(w.tblRegisters.item(1, 0).text(), "4150")
@@ -97,6 +97,34 @@ class TestControllerLineIntegration(unittest.TestCase):
             self.assertEqual(w.tblRegisters.item(1, 1).text(), "")
         finally:
             path.unlink(missing_ok=True)
+
+    def test_process_config_legacy_numeric_register_addresses(self) -> None:
+        """JSON with int ``register_addresses`` shows decimal strings in the table."""
+        cfg = ConfigFile.model_validate(
+            {
+                "controllers": [
+                    {
+                        "name": "LegacyCtl",
+                        "port": 5025,
+                        "register_addresses": [4146, 2801],
+                    }
+                ],
+                "printers": [],
+                "cameras": [],
+                "scanners": [],
+                "transporters": [],
+                "generators": [],
+            }
+        )
+        self.field.process_config(cfg)
+        self.assertEqual(len(self.field._controller_widgets), 1)
+        w = next(iter(self.field._controller_widgets.values()))
+        assert isinstance(w, ControllerWidget)
+        self.assertEqual(w.tblRegisters.rowCount(), 2)
+        self.assertEqual(w.tblRegisters.item(0, 0).text(), "4146")
+        self.assertEqual(w.tblRegisters.item(1, 0).text(), "2801")
+        self.assertEqual(w.tblRegisters.item(0, 1).text(), "")
+        self.assertEqual(w.tblRegisters.item(1, 1).text(), "")
 
     def test_legacy_json_without_controllers_opens_empty(self) -> None:
         """Old JSON without controllers key loads with no controller cards."""

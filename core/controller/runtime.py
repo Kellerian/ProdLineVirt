@@ -429,6 +429,230 @@ class ControllerRuntime:
             )
             return [None] * n
 
+    def read_points(
+        self, points: Sequence[tuple[str, int]]
+    ) -> list[int | bool | None]:
+        """Read holding registers and coils from the worker Modbus datastore (synchronous).
+
+        Schedules one coroutine on the runtime's asyncio loop via
+        :func:`asyncio.run_coroutine_threadsafe`. Safe to call from a UI thread.
+
+        Parameters
+        ----------
+        points
+            Each element is ``("holding", address)`` or ``("coil", address)``.
+            Holding addresses must be ``int`` (not ``bool``) in ``0..10000``; coil addresses
+            in ``0..5000``. Any other tag or invalid address yields ``None`` for that slot
+            without touching the datastore.
+
+        Returns
+        -------
+        list[int | bool | None]
+            One entry per input point, same order. Holding successes are ``int`` (never
+            ``bool``); coil successes are ``bool``; ``None`` means invalid point, datastore
+            error, stopped runtime, or read timeout (0.25 s). Empty ``points`` returns ``[]``.
+        """
+        if not points:
+            return []
+
+        point_tuple = tuple(points)
+        n = len(point_tuple)
+
+        with self._state_lock:
+            loop = self._loop
+            modbus = self._modbus
+            thread = self._thread
+
+        if (
+            thread is None
+            or not thread.is_alive()
+            or loop is None
+            or loop.is_closed()
+            or modbus is None
+        ):
+            return [None] * n
+
+        # Same upper bounds as pymodbus datastore: holding_registers_size/coils_size minus 2.
+        _HOLDING_MAX = 10000
+        _COIL_MAX = 5000
+
+        async def _read_on_loop() -> list[int | bool | None]:
+            results: list[int | bool | None] = []
+            for kind, address in point_tuple:
+                if kind == "holding":
+                    if (
+                        not isinstance(address, int)
+                        or isinstance(address, bool)
+                        or not (0 <= address <= _HOLDING_MAX)
+                    ):
+                        results.append(None)
+                        continue
+                    try:
+                        value = int(modbus.get_holding_register(address))
+                        results.append(value)
+                    except Exception as exc:
+                        logger.debug(
+                            "Controller runtime read_points failed kind=holding "
+                            "address=%s: %s",
+                            address,
+                            exc,
+                        )
+                        results.append(None)
+                elif kind == "coil":
+                    if (
+                        not isinstance(address, int)
+                        or isinstance(address, bool)
+                        or not (0 <= address <= _COIL_MAX)
+                    ):
+                        results.append(None)
+                        continue
+                    try:
+                        results.append(bool(modbus.get_coil(address)))
+                    except Exception as exc:
+                        logger.debug(
+                            "Controller runtime read_points failed kind=coil address=%s: %s",
+                            address,
+                            exc,
+                        )
+                        results.append(None)
+                else:
+                    results.append(None)
+            return results
+
+        try:
+            fut = asyncio.run_coroutine_threadsafe(_read_on_loop(), loop)
+        except Exception as exc:
+            logger.debug(
+                "Controller runtime read_points schedule failed: %s",
+                exc,
+            )
+            return [None] * n
+
+        try:
+            return fut.result(timeout=0.25)
+        except concurrent.futures.TimeoutError:
+            logger.debug(
+                "Controller runtime read_points timed out after 0.25s",
+            )
+            return [None] * n
+        except Exception as exc:
+            logger.debug(
+                "Controller runtime read_points result failed: %s",
+                exc,
+            )
+            return [None] * n
+
+    def write_point(self, kind: str, address: int, value: int | bool) -> bool:
+        """Write one holding register or coil on the worker Modbus datastore (synchronous).
+
+        Schedules one coroutine on the runtime's asyncio loop via
+        :func:`asyncio.run_coroutine_threadsafe`. Safe to call from a UI thread.
+
+        Parameters
+        ----------
+        kind
+            ``"holding"`` or ``"coil"``.
+        address
+            Modbus address. Holding: ``int`` (not ``bool``) in ``0..10000``; coil in
+            ``0..5000``.
+        value
+            For holding: ``int`` (not ``bool``) in ``0..65535``. For coil: ``bool`` only
+            (``0``/``1`` as ``int`` are rejected).
+
+        Returns
+        -------
+        bool
+            ``True`` if the write completed on the worker loop; ``False`` for invalid
+            arguments, stopped runtime, schedule/timeout failure, or datastore error
+            (no exception propagated).
+        """
+        with self._state_lock:
+            loop = self._loop
+            modbus = self._modbus
+            thread = self._thread
+
+        if (
+            thread is None
+            or not thread.is_alive()
+            or loop is None
+            or loop.is_closed()
+            or modbus is None
+        ):
+            return False
+
+        _HOLDING_ADDR_MAX = 10000
+        _COIL_ADDR_MAX = 5000
+        _HOLDING_VALUE_MAX = 65535
+
+        async def _write_on_loop() -> bool:
+            if kind == "holding":
+                if (
+                    not isinstance(address, int)
+                    or isinstance(address, bool)
+                    or not (0 <= address <= _HOLDING_ADDR_MAX)
+                ):
+                    return False
+                if (
+                    not isinstance(value, int)
+                    or isinstance(value, bool)
+                    or not (0 <= value <= _HOLDING_VALUE_MAX)
+                ):
+                    return False
+                try:
+                    modbus.update_holding_register(address, int(value))
+                    return True
+                except Exception as exc:
+                    logger.debug(
+                        "Controller runtime write_point failed kind=holding "
+                        "address=%s: %s",
+                        address,
+                        exc,
+                    )
+                    return False
+            if kind == "coil":
+                if (
+                    not isinstance(address, int)
+                    or isinstance(address, bool)
+                    or not (0 <= address <= _COIL_ADDR_MAX)
+                ):
+                    return False
+                if type(value) is not bool:
+                    return False
+                try:
+                    modbus.update_coil(address, value)
+                    return True
+                except Exception as exc:
+                    logger.debug(
+                        "Controller runtime write_point failed kind=coil address=%s: %s",
+                        address,
+                        exc,
+                    )
+                    return False
+            return False
+
+        try:
+            fut = asyncio.run_coroutine_threadsafe(_write_on_loop(), loop)
+        except Exception as exc:
+            logger.debug(
+                "Controller runtime write_point schedule failed: %s",
+                exc,
+            )
+            return False
+
+        try:
+            return bool(fut.result(timeout=0.25))
+        except concurrent.futures.TimeoutError:
+            logger.debug(
+                "Controller runtime write_point timed out after 0.25s",
+            )
+            return False
+        except Exception as exc:
+            logger.debug(
+                "Controller runtime write_point result failed: %s",
+                exc,
+            )
+            return False
+
     def _clear_refs_unlocked(self) -> None:
         self._thread = None
         self._loop = None
