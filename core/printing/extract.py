@@ -39,7 +39,8 @@ _ZPL_GFA_RE = re.compile(
     rb"\^GFA\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,",
     re.IGNORECASE,
 )
-_XRB_LINE_RE = re.compile(r"^XRB[^,]*,(\d+),", re.IGNORECASE)
+# EZPL: length — последний числовой параметр (не координата y).
+_XRB_LENGTH_RE = re.compile(r",(\d+)\s*$", re.IGNORECASE)
 _ZPL_FD_RE = re.compile(r"\^FD(.+?)\^FS", re.IGNORECASE)
 _ZPL_FH_CMD_RE = re.compile(r"\^FH", re.IGNORECASE)
 _HEX_PAIR_RE = re.compile(r"^[0-9A-Fa-f]{2}$")
@@ -179,9 +180,9 @@ def _extract_line_text_codes(text: str) -> list[str]:
             continue
 
         if row.upper().startswith("XRB"):
-            length_match = _XRB_LINE_RE.match(row)
             if index + 1 < len(rows):
-                data_line = rows[index + 1]
+                data_line = rows[index + 1].strip("\r")
+                length_match = _XRB_LENGTH_RE.search(row)
                 if length_match:
                     length = int(length_match.group(1))
                     code = data_line[:length]

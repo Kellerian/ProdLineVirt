@@ -50,8 +50,19 @@ XRB21,15,6,0,35
 aolih489au894auj894atu0ajr
 """
         assert extract_barcode_value_from_template(template) == [
-            "aolih489au894au"
+            "aolih489au894auj894atu0ajr"
         ]
+
+    def test_ezpl_xrb_length_is_last_param_not_y(self) -> None:
+        """Регрессия: y=32 не должен обрезать поле длиной 40 байт."""
+        payload = (
+            "~1"
+            "0107665585002196215-BStV(2ZUclT"
+            f"{chr(29)}93dGVz"
+        )
+        assert len(payload) == 40
+        template = f"XRB100,32,6,0,40\n{payload}\n"
+        assert extract_barcode_value_from_template(template) == [payload]
 
     def test_tspl_dmatrix_quoted(self) -> None:
         row = 'DMATRIX 10,10,"01234567890123"'

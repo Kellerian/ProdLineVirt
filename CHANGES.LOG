@@ -1,3 +1,4 @@
+2026-11-09 — `core/printing/extract.py`: EZPL `XRB` — длина данных берётся из последнего параметра команды, а не из координаты `y` (исправление обрезки GS1 на камеру); тест `test_printer_extract`; `VERSION` 1.0.0.1.b0014.
 2026-11-09 — docs/line_emulator: `controller_widget.md` — редактируемая «Значение» при S (`itemChanged`, `write_point`, `UserRole`, guard, пропуск строки с открытым редактором); `controller.md` — правка значения в datastore без JSON; шапки `b0013` в `controller_widget.md` и `controller_core.md`.
 2026-11-09 — docs/line_emulator/controller_core.md: раздел «Запись holding и coil: write_point» (`update_holding_register` / `update_coil`, один `run_coroutine_threadsafe`, таймаут 0.25 с, валидация адресов/значений); `TestControllerRuntimeWritePoint` в списке тестов.
 2026-11-09 — Line Emulator / контроллер (ревью #2): `controller_widget.py` — DEBUG при `write_point` → `False`; `_register_cell_guard_ctx` — `blockSignals` только при переходе счётчика 0↔1.
